@@ -92,7 +92,7 @@ function FlashcardsPage() {
       queryClient.invalidateQueries();
       toast.success(`Created ${result.cards.length} cards! +30 XP`);
       if (res.newBadges.length) toast.success(`🏅 New badge unlocked!`);
-      navigate({ to: "/flashcards/$setId", params: { setId: set.id } });
+      navigate({ to: "/study/$setId", params: { setId: set.id } });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Generation failed");
     } finally {
@@ -181,7 +181,7 @@ function FlashcardsPage() {
                     <span>{cardCount} cards</span>
                   </div>
                   <Button asChild variant="soft" className="mt-4 w-full">
-                    <Link to="/flashcards/$setId" params={{ setId: s.id }}>Study</Link>
+                    <Link to="/study/$setId" params={{ setId: s.id }}>Study</Link>
                   </Button>
                 </div>
               );
