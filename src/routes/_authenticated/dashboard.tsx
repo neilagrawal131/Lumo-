@@ -291,9 +291,9 @@ function RecentList({
 }: {
   title: string;
   icon: React.ElementType;
-  items: { id: string; title: string; sub: string; to: string }[];
+  items: { id: string; title: string; sub: string; to: "/flashcards" | "/quizzes" }[];
   empty: string;
-  emptyTo: string;
+  emptyTo: "/flashcards" | "/quizzes";
 }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
