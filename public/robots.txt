@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+Disallow: /dashboard
+Disallow: /flashcards
+Disallow: /quizzes
+Disallow: /study-guide
+Disallow: /study
+Disallow: /progress
+Disallow: /auth

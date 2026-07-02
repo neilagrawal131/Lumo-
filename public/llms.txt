@@ -1,0 +1,9 @@
+# Lumo
+
+> Lumo is an AI-powered learning platform that turns any topic, notes, or PDF into flashcards, quizzes, and study guides, with progress tracking, streaks, and gamified learning for all ages.
+
+## Pages
+- [Home](/): Overview of Lumo's AI study tools, features, pricing, and FAQ.
+
+## Optional
+- [Sign in](/auth): Create an account or log in to start learning.
