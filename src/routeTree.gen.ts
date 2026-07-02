@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedStudyGuideRouteImport } from './routes/_authenticated/study-guide'
 import { Route as AuthenticatedQuizzesRouteImport } from './routes/_authenticated/quizzes'
+import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated/progress'
 import { Route as AuthenticatedFlashcardsRouteImport } from './routes/_authenticated/flashcards'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedStudySetIdRouteImport } from './routes/_authenticated/study.$setId'
@@ -42,6 +43,11 @@ const AuthenticatedQuizzesRoute = AuthenticatedQuizzesRouteImport.update({
   path: '/quizzes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProgressRoute = AuthenticatedProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedFlashcardsRoute = AuthenticatedFlashcardsRouteImport.update({
   id: '/flashcards',
   path: '/flashcards',
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/flashcards': typeof AuthenticatedFlashcardsRoute
+  '/progress': typeof AuthenticatedProgressRoute
   '/quizzes': typeof AuthenticatedQuizzesRoute
   '/study-guide': typeof AuthenticatedStudyGuideRoute
   '/study/$setId': typeof AuthenticatedStudySetIdRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/flashcards': typeof AuthenticatedFlashcardsRoute
+  '/progress': typeof AuthenticatedProgressRoute
   '/quizzes': typeof AuthenticatedQuizzesRoute
   '/study-guide': typeof AuthenticatedStudyGuideRoute
   '/study/$setId': typeof AuthenticatedStudySetIdRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/flashcards': typeof AuthenticatedFlashcardsRoute
+  '/_authenticated/progress': typeof AuthenticatedProgressRoute
   '/_authenticated/quizzes': typeof AuthenticatedQuizzesRoute
   '/_authenticated/study-guide': typeof AuthenticatedStudyGuideRoute
   '/_authenticated/study/$setId': typeof AuthenticatedStudySetIdRoute
@@ -94,6 +103,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/flashcards'
+    | '/progress'
     | '/quizzes'
     | '/study-guide'
     | '/study/$setId'
@@ -103,6 +113,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/flashcards'
+    | '/progress'
     | '/quizzes'
     | '/study-guide'
     | '/study/$setId'
@@ -113,6 +124,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/dashboard'
     | '/_authenticated/flashcards'
+    | '/_authenticated/progress'
     | '/_authenticated/quizzes'
     | '/_authenticated/study-guide'
     | '/_authenticated/study/$setId'
@@ -161,6 +173,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedQuizzesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/progress': {
+      id: '/_authenticated/progress'
+      path: '/progress'
+      fullPath: '/progress'
+      preLoaderRoute: typeof AuthenticatedProgressRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/flashcards': {
       id: '/_authenticated/flashcards'
       path: '/flashcards'
@@ -188,6 +207,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFlashcardsRoute: typeof AuthenticatedFlashcardsRoute
+  AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
   AuthenticatedQuizzesRoute: typeof AuthenticatedQuizzesRoute
   AuthenticatedStudyGuideRoute: typeof AuthenticatedStudyGuideRoute
   AuthenticatedStudySetIdRoute: typeof AuthenticatedStudySetIdRoute
@@ -196,6 +216,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFlashcardsRoute: AuthenticatedFlashcardsRoute,
+  AuthenticatedProgressRoute: AuthenticatedProgressRoute,
   AuthenticatedQuizzesRoute: AuthenticatedQuizzesRoute,
   AuthenticatedStudyGuideRoute: AuthenticatedStudyGuideRoute,
   AuthenticatedStudySetIdRoute: AuthenticatedStudySetIdRoute,
