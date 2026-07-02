@@ -218,7 +218,7 @@ function Dashboard() {
           icon={ClipboardList}
           empty="No quizzes yet — generate one!"
           emptyTo="/quizzes"
-          items={(quizzes ?? []).map((q) => ({ id: q.id, title: q.title, sub: q.difficulty, to: `/quizzes` }))}
+          items={(quizzes ?? []).map((q) => ({ id: q.id, title: q.title, sub: q.difficulty, to: "/quizzes" as const }))}
         />
       </div>
 
