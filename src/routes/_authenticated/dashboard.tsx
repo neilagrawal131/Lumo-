@@ -211,7 +211,7 @@ function Dashboard() {
           icon={Layers}
           empty="No sets yet — create your first!"
           emptyTo="/flashcards"
-          items={(sets ?? []).map((s) => ({ id: s.id, title: s.title, sub: s.difficulty, to: `/flashcards/${s.id}` }))}
+          items={(sets ?? []).map((s) => ({ id: s.id, title: s.title, sub: s.difficulty, to: "/flashcards" as const }))}
         />
         <RecentList
           title="Recent quizzes"
