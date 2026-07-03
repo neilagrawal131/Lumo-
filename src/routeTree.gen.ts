@@ -19,6 +19,7 @@ import { Route as AuthenticatedFlashcardsRouteImport } from './routes/_authentic
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCreateRouteImport } from './routes/_authenticated/create'
 import { Route as AuthenticatedStudySetIdRouteImport } from './routes/_authenticated/study.$setId'
+import { Route as AuthenticatedEditorSetIdRouteImport } from './routes/_authenticated/editor.$setId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -69,6 +70,12 @@ const AuthenticatedStudySetIdRoute = AuthenticatedStudySetIdRouteImport.update({
   path: '/study/$setId',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedEditorSetIdRoute =
+  AuthenticatedEditorSetIdRouteImport.update({
+    id: '/editor/$setId',
+    path: '/editor/$setId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/progress': typeof AuthenticatedProgressRoute
   '/quizzes': typeof AuthenticatedQuizzesRoute
   '/study-guide': typeof AuthenticatedStudyGuideRoute
+  '/editor/$setId': typeof AuthenticatedEditorSetIdRoute
   '/study/$setId': typeof AuthenticatedStudySetIdRoute
 }
 export interface FileRoutesByTo {
@@ -90,6 +98,7 @@ export interface FileRoutesByTo {
   '/progress': typeof AuthenticatedProgressRoute
   '/quizzes': typeof AuthenticatedQuizzesRoute
   '/study-guide': typeof AuthenticatedStudyGuideRoute
+  '/editor/$setId': typeof AuthenticatedEditorSetIdRoute
   '/study/$setId': typeof AuthenticatedStudySetIdRoute
 }
 export interface FileRoutesById {
@@ -103,6 +112,7 @@ export interface FileRoutesById {
   '/_authenticated/progress': typeof AuthenticatedProgressRoute
   '/_authenticated/quizzes': typeof AuthenticatedQuizzesRoute
   '/_authenticated/study-guide': typeof AuthenticatedStudyGuideRoute
+  '/_authenticated/editor/$setId': typeof AuthenticatedEditorSetIdRoute
   '/_authenticated/study/$setId': typeof AuthenticatedStudySetIdRoute
 }
 export interface FileRouteTypes {
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/progress'
     | '/quizzes'
     | '/study-guide'
+    | '/editor/$setId'
     | '/study/$setId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/progress'
     | '/quizzes'
     | '/study-guide'
+    | '/editor/$setId'
     | '/study/$setId'
   id:
     | '__root__'
@@ -139,6 +151,7 @@ export interface FileRouteTypes {
     | '/_authenticated/progress'
     | '/_authenticated/quizzes'
     | '/_authenticated/study-guide'
+    | '/_authenticated/editor/$setId'
     | '/_authenticated/study/$setId'
   fileRoutesById: FileRoutesById
 }
@@ -220,6 +233,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudySetIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/editor/$setId': {
+      id: '/_authenticated/editor/$setId'
+      path: '/editor/$setId'
+      fullPath: '/editor/$setId'
+      preLoaderRoute: typeof AuthenticatedEditorSetIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -230,6 +250,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
   AuthenticatedQuizzesRoute: typeof AuthenticatedQuizzesRoute
   AuthenticatedStudyGuideRoute: typeof AuthenticatedStudyGuideRoute
+  AuthenticatedEditorSetIdRoute: typeof AuthenticatedEditorSetIdRoute
   AuthenticatedStudySetIdRoute: typeof AuthenticatedStudySetIdRoute
 }
 
@@ -240,6 +261,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProgressRoute: AuthenticatedProgressRoute,
   AuthenticatedQuizzesRoute: AuthenticatedQuizzesRoute,
   AuthenticatedStudyGuideRoute: AuthenticatedStudyGuideRoute,
+  AuthenticatedEditorSetIdRoute: AuthenticatedEditorSetIdRoute,
   AuthenticatedStudySetIdRoute: AuthenticatedStudySetIdRoute,
 }
 
