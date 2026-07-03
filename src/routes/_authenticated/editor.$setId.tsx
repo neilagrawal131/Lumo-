@@ -194,8 +194,8 @@ function EditorPage() {
     setQuizzing(true);
     try {
       await persist();
-      const topic = `Create a quiz from these study cards for the topic "${title}".\n\n` +
-        valid.map((c) => `Q: ${c.front}\nA: ${c.back}`).join("\n\n");
+      const topic = (`Create a quiz from these study cards for the topic "${title}".\n\n` +
+        valid.map((c) => `Q: ${c.front}\nA: ${c.back}`).join("\n\n")).slice(0, 4000);
       const result = await genQuiz({
         data: {
           topic,
