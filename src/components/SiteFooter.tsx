@@ -41,7 +41,7 @@ export function SiteFooter() {
           </div>
         </div>
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-border/60 pt-6 text-sm text-muted-foreground md:flex-row">
-          <p>© {new Date().getFullYear()} Lumo. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Etude. All rights reserved.</p>
           <p>Made for curious minds ✨</p>
         </div>
       </div>

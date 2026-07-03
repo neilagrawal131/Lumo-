@@ -85,14 +85,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lumo — Learn Smarter with AI Study Tools" },
+      { title: "Etude — Learn Smarter with AI Study Tools" },
       {
         name: "description",
         content:
-          "Lumo turns any topic, notes, or PDF into AI-generated flashcards, quizzes, and study guides. Track progress, build streaks, and learn smarter.",
+          "Etude turns any topic, notes, or PDF into AI-generated flashcards, quizzes, and study guides. Track progress, build streaks, and learn smarter.",
       },
-      { name: "author", content: "Lumo" },
-      { property: "og:title", content: "Lumo — Learn Smarter with AI" },
+      { name: "author", content: "Etude" },
+      { property: "og:title", content: "Etude — Learn Smarter with AI" },
       {
         property: "og:description",
         content: "AI-generated flashcards, quizzes & study guides with progress tracking and gamified learning.",

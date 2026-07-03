@@ -9,10 +9,10 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/shared/$slug")({
   head: () => ({
     meta: [
-      { title: "Shared study set — Lumo" },
-      { name: "description", content: "Study a shared flashcard set on Lumo." },
-      { property: "og:title", content: "Shared study set — Lumo" },
-      { property: "og:description", content: "Study a shared flashcard set on Lumo." },
+      { title: "Shared study set — Etude" },
+      { name: "description", content: "Study a shared flashcard set on Etude." },
+      { property: "og:title", content: "Shared study set — Etude" },
+      { property: "og:description", content: "Study a shared flashcard set on Etude." },
     ],
   }),
   component: SharedSet,
@@ -46,7 +46,7 @@ function SharedSet() {
     <div className="min-h-screen bg-soft">
       <header className="flex items-center justify-between border-b border-border/60 bg-card/90 px-4 py-3 backdrop-blur md:px-8">
         <Link to="/"><Logo /></Link>
-        <Button asChild variant="hero" size="sm"><Link to="/auth" search={{ mode: "signup" }}><Sparkles className="h-4 w-4" /> Try Lumo free</Link></Button>
+        <Button asChild variant="hero" size="sm"><Link to="/auth" search={{ mode: "signup" }}><Sparkles className="h-4 w-4" /> Try Etude free</Link></Button>
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-10">

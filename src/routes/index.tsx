@@ -41,7 +41,7 @@ const features = [
 
 const steps = [
   { icon: Upload, title: "Add your material", desc: "Enter a topic or paste your notes. Pick a difficulty and you're ready." },
-  { icon: Wand2, title: "Let AI do the work", desc: "In seconds, Lumo builds flashcards, quizzes and study guides tailored to you." },
+  { icon: Wand2, title: "Let AI do the work", desc: "In seconds, Etude builds flashcards, quizzes and study guides tailored to you." },
   { icon: Trophy, title: "Learn & level up", desc: "Study, review, take quizzes, build streaks and watch your progress soar." },
 ];
 
@@ -65,11 +65,11 @@ const plans = [
 ];
 
 const faqs = [
-  { q: "How does Lumo create flashcards and quizzes?", a: "Just enter a topic or paste your notes. Lumo's AI reads your material and instantly generates accurate flashcards, quizzes and study guides tailored to your chosen difficulty and age level." },
-  { q: "Is Lumo free to use?", a: "Yes! The Free plan gives you unlimited flashcards, AI quizzes, streaks and progress tracking. Pro unlocks unlimited AI generations, study guides and advanced analytics." },
-  { q: "What subjects can I study?", a: "Anything — from history and biology to languages, coding and professional certifications. If you can describe it, Lumo can help you learn it." },
-  { q: "Does it work for kids?", a: "Absolutely. Lumo adapts to your age group, offering a colorful, simple experience for kids and a focused, professional one for adults." },
-  { q: "How does spaced repetition work?", a: "Lumo schedules your flashcards so you review them right before you'd forget — the most efficient, science-backed way to remember more in less time." },
+  { q: "How does Etude create flashcards and quizzes?", a: "Just enter a topic or paste your notes. Etude's AI reads your material and instantly generates accurate flashcards, quizzes and study guides tailored to your chosen difficulty and age level." },
+  { q: "Is Etude free to use?", a: "Yes! The Free plan gives you unlimited flashcards, AI quizzes, streaks and progress tracking. Pro unlocks unlimited AI generations, study guides and advanced analytics." },
+  { q: "What subjects can I study?", a: "Anything — from history and biology to languages, coding and professional certifications. If you can describe it, Etude can help you learn it." },
+  { q: "Does it work for kids?", a: "Absolutely. Etude adapts to your age group, offering a colorful, simple experience for kids and a focused, professional one for adults." },
+  { q: "How does spaced repetition work?", a: "Etude schedules your flashcards so you review them right before you'd forget — the most efficient, science-backed way to remember more in less time." },
 ];
 
 function Home() {
@@ -191,7 +191,7 @@ function Home() {
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-4xl font-bold">Built for every learner</h2>
           <p className="mt-4 text-muted-foreground">
-            Lumo adapts its look, language and difficulty to you — whatever your age.
+            Etude adapts its look, language and difficulty to you — whatever your age.
           </p>
         </div>
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -211,7 +211,7 @@ function Home() {
       <section className="bg-soft">
         <div className="mx-auto max-w-6xl px-4 py-20">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-4xl font-bold">Learners love Lumo</h2>
+            <h2 className="text-4xl font-bold">Learners love Etude</h2>
           </div>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {testimonials.map((t) => (

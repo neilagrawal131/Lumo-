@@ -58,7 +58,7 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        toast.success("Welcome to Lumo! 🎉");
+        toast.success("Welcome to Etude! 🎉");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -94,7 +94,7 @@ function AuthPage() {
         <div className="relative z-10">
           <Link to="/" className="flex items-center gap-2 font-display text-xl font-bold text-primary-foreground">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20">✨</span>
-            Lumo
+            Etude
           </Link>
         </div>
         <div className="relative z-10 max-w-md text-primary-foreground">
@@ -179,7 +179,7 @@ function AuthPage() {
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            {isSignup ? "Already have an account? " : "New to Lumo? "}
+            {isSignup ? "Already have an account? " : "New to Etude? "}
             <Link
               to="/auth"
               search={{ mode: isSignup ? "login" : "signup" }}
