@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SharedSlugRouteImport } from './routes/shared.$slug'
 import { Route as AuthenticatedStudyGuideRouteImport } from './routes/_authenticated/study-guide'
 import { Route as AuthenticatedQuizzesRouteImport } from './routes/_authenticated/quizzes'
 import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated/progress'
@@ -33,6 +34,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SharedSlugRoute = SharedSlugRouteImport.update({
+  id: '/shared/$slug',
+  path: '/shared/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedStudyGuideRoute = AuthenticatedStudyGuideRouteImport.update({
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/progress': typeof AuthenticatedProgressRoute
   '/quizzes': typeof AuthenticatedQuizzesRoute
   '/study-guide': typeof AuthenticatedStudyGuideRoute
+  '/shared/$slug': typeof SharedSlugRoute
   '/editor/$setId': typeof AuthenticatedEditorSetIdRoute
   '/study/$setId': typeof AuthenticatedStudySetIdRoute
 }
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/progress': typeof AuthenticatedProgressRoute
   '/quizzes': typeof AuthenticatedQuizzesRoute
   '/study-guide': typeof AuthenticatedStudyGuideRoute
+  '/shared/$slug': typeof SharedSlugRoute
   '/editor/$setId': typeof AuthenticatedEditorSetIdRoute
   '/study/$setId': typeof AuthenticatedStudySetIdRoute
 }
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/_authenticated/progress': typeof AuthenticatedProgressRoute
   '/_authenticated/quizzes': typeof AuthenticatedQuizzesRoute
   '/_authenticated/study-guide': typeof AuthenticatedStudyGuideRoute
+  '/shared/$slug': typeof SharedSlugRoute
   '/_authenticated/editor/$setId': typeof AuthenticatedEditorSetIdRoute
   '/_authenticated/study/$setId': typeof AuthenticatedStudySetIdRoute
 }
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/progress'
     | '/quizzes'
     | '/study-guide'
+    | '/shared/$slug'
     | '/editor/$setId'
     | '/study/$setId'
   fileRoutesByTo: FileRoutesByTo
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/progress'
     | '/quizzes'
     | '/study-guide'
+    | '/shared/$slug'
     | '/editor/$setId'
     | '/study/$setId'
   id:
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/_authenticated/progress'
     | '/_authenticated/quizzes'
     | '/_authenticated/study-guide'
+    | '/shared/$slug'
     | '/_authenticated/editor/$setId'
     | '/_authenticated/study/$setId'
   fileRoutesById: FileRoutesById
@@ -159,6 +171,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  SharedSlugRoute: typeof SharedSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -182,6 +195,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shared/$slug': {
+      id: '/shared/$slug'
+      path: '/shared/$slug'
+      fullPath: '/shared/$slug'
+      preLoaderRoute: typeof SharedSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/study-guide': {
@@ -272,6 +292,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  SharedSlugRoute: SharedSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
