@@ -41,7 +41,12 @@ export type Database = {
           created_at: string
           description: string | null
           difficulty: Database["public"]["Enums"]["difficulty"]
+          folder_id: string | null
           id: string
+          is_manual: boolean
+          is_public: boolean
+          share_slug: string | null
+          subject: string | null
           title: string
           topic: string | null
           updated_at: string
@@ -52,7 +57,12 @@ export type Database = {
           created_at?: string
           description?: string | null
           difficulty?: Database["public"]["Enums"]["difficulty"]
+          folder_id?: string | null
           id?: string
+          is_manual?: boolean
+          is_public?: boolean
+          share_slug?: string | null
+          subject?: string | null
           title: string
           topic?: string | null
           updated_at?: string
@@ -63,13 +73,26 @@ export type Database = {
           created_at?: string
           description?: string | null
           difficulty?: Database["public"]["Enums"]["difficulty"]
+          folder_id?: string | null
           id?: string
+          is_manual?: boolean
+          is_public?: boolean
+          share_slug?: string | null
+          subject?: string | null
           title?: string
           topic?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_sets_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       flashcards: {
         Row: {
@@ -79,6 +102,7 @@ export type Database = {
           ease: number
           front: string
           id: string
+          image_url: string | null
           interval_days: number
           position: number
           review_count: number
@@ -92,6 +116,7 @@ export type Database = {
           ease?: number
           front: string
           id?: string
+          image_url?: string | null
           interval_days?: number
           position?: number
           review_count?: number
@@ -105,6 +130,7 @@ export type Database = {
           ease?: number
           front?: string
           id?: string
+          image_url?: string | null
           interval_days?: number
           position?: number
           review_count?: number
@@ -120,6 +146,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      folders: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {

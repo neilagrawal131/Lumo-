@@ -12,12 +12,15 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SharedSlugRouteImport } from './routes/shared.$slug'
 import { Route as AuthenticatedStudyGuideRouteImport } from './routes/_authenticated/study-guide'
 import { Route as AuthenticatedQuizzesRouteImport } from './routes/_authenticated/quizzes'
 import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated/progress'
 import { Route as AuthenticatedFlashcardsRouteImport } from './routes/_authenticated/flashcards'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCreateRouteImport } from './routes/_authenticated/create'
 import { Route as AuthenticatedStudySetIdRouteImport } from './routes/_authenticated/study.$setId'
+import { Route as AuthenticatedEditorSetIdRouteImport } from './routes/_authenticated/editor.$setId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -31,6 +34,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SharedSlugRoute = SharedSlugRouteImport.update({
+  id: '/shared/$slug',
+  path: '/shared/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedStudyGuideRoute = AuthenticatedStudyGuideRouteImport.update({
@@ -58,30 +66,47 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCreateRoute = AuthenticatedCreateRouteImport.update({
+  id: '/create',
+  path: '/create',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedStudySetIdRoute = AuthenticatedStudySetIdRouteImport.update({
   id: '/study/$setId',
   path: '/study/$setId',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedEditorSetIdRoute =
+  AuthenticatedEditorSetIdRouteImport.update({
+    id: '/editor/$setId',
+    path: '/editor/$setId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/create': typeof AuthenticatedCreateRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/flashcards': typeof AuthenticatedFlashcardsRoute
   '/progress': typeof AuthenticatedProgressRoute
   '/quizzes': typeof AuthenticatedQuizzesRoute
   '/study-guide': typeof AuthenticatedStudyGuideRoute
+  '/shared/$slug': typeof SharedSlugRoute
+  '/editor/$setId': typeof AuthenticatedEditorSetIdRoute
   '/study/$setId': typeof AuthenticatedStudySetIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/create': typeof AuthenticatedCreateRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/flashcards': typeof AuthenticatedFlashcardsRoute
   '/progress': typeof AuthenticatedProgressRoute
   '/quizzes': typeof AuthenticatedQuizzesRoute
   '/study-guide': typeof AuthenticatedStudyGuideRoute
+  '/shared/$slug': typeof SharedSlugRoute
+  '/editor/$setId': typeof AuthenticatedEditorSetIdRoute
   '/study/$setId': typeof AuthenticatedStudySetIdRoute
 }
 export interface FileRoutesById {
@@ -89,11 +114,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/create': typeof AuthenticatedCreateRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/flashcards': typeof AuthenticatedFlashcardsRoute
   '/_authenticated/progress': typeof AuthenticatedProgressRoute
   '/_authenticated/quizzes': typeof AuthenticatedQuizzesRoute
   '/_authenticated/study-guide': typeof AuthenticatedStudyGuideRoute
+  '/shared/$slug': typeof SharedSlugRoute
+  '/_authenticated/editor/$setId': typeof AuthenticatedEditorSetIdRoute
   '/_authenticated/study/$setId': typeof AuthenticatedStudySetIdRoute
 }
 export interface FileRouteTypes {
@@ -101,32 +129,41 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/create'
     | '/dashboard'
     | '/flashcards'
     | '/progress'
     | '/quizzes'
     | '/study-guide'
+    | '/shared/$slug'
+    | '/editor/$setId'
     | '/study/$setId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/create'
     | '/dashboard'
     | '/flashcards'
     | '/progress'
     | '/quizzes'
     | '/study-guide'
+    | '/shared/$slug'
+    | '/editor/$setId'
     | '/study/$setId'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/create'
     | '/_authenticated/dashboard'
     | '/_authenticated/flashcards'
     | '/_authenticated/progress'
     | '/_authenticated/quizzes'
     | '/_authenticated/study-guide'
+    | '/shared/$slug'
+    | '/_authenticated/editor/$setId'
     | '/_authenticated/study/$setId'
   fileRoutesById: FileRoutesById
 }
@@ -134,6 +171,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  SharedSlugRoute: typeof SharedSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -157,6 +195,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shared/$slug': {
+      id: '/shared/$slug'
+      path: '/shared/$slug'
+      fullPath: '/shared/$slug'
+      preLoaderRoute: typeof SharedSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/study-guide': {
@@ -194,6 +239,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/create': {
+      id: '/_authenticated/create'
+      path: '/create'
+      fullPath: '/create'
+      preLoaderRoute: typeof AuthenticatedCreateRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/study/$setId': {
       id: '/_authenticated/study/$setId'
       path: '/study/$setId'
@@ -201,24 +253,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudySetIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/editor/$setId': {
+      id: '/_authenticated/editor/$setId'
+      path: '/editor/$setId'
+      fullPath: '/editor/$setId'
+      preLoaderRoute: typeof AuthenticatedEditorSetIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCreateRoute: typeof AuthenticatedCreateRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFlashcardsRoute: typeof AuthenticatedFlashcardsRoute
   AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
   AuthenticatedQuizzesRoute: typeof AuthenticatedQuizzesRoute
   AuthenticatedStudyGuideRoute: typeof AuthenticatedStudyGuideRoute
+  AuthenticatedEditorSetIdRoute: typeof AuthenticatedEditorSetIdRoute
   AuthenticatedStudySetIdRoute: typeof AuthenticatedStudySetIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCreateRoute: AuthenticatedCreateRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFlashcardsRoute: AuthenticatedFlashcardsRoute,
   AuthenticatedProgressRoute: AuthenticatedProgressRoute,
   AuthenticatedQuizzesRoute: AuthenticatedQuizzesRoute,
   AuthenticatedStudyGuideRoute: AuthenticatedStudyGuideRoute,
+  AuthenticatedEditorSetIdRoute: AuthenticatedEditorSetIdRoute,
   AuthenticatedStudySetIdRoute: AuthenticatedStudySetIdRoute,
 }
 
@@ -229,17 +292,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  SharedSlugRoute: SharedSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

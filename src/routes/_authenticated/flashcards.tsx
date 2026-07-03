@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Layers, Loader2, Sparkles, Trash2, FileUp, Plus } from "lucide-react";
+import { Layers, Loader2, Sparkles, Trash2, FileUp, PenLine, Pencil, Globe, Folder } from "lucide-react";
 import { generateFlashcards } from "@/lib/ai.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,7 +11,6 @@ import { useProfile } from "@/hooks/useProfile";
 import { recordActivity, awardBadge } from "@/lib/progress";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DifficultyPicker } from "@/components/DifficultyPicker";
 
@@ -30,6 +29,16 @@ function FlashcardsPage() {
   const [count, setCount] = useState(10);
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [loading, setLoading] = useState(false);
+  const [folderFilter, setFolderFilter] = useState<string>("all");
+
+  const { data: folders } = useQuery({
+    queryKey: ["folders", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("folders").select("id, name").order("created_at");
+      return data ?? [];
+    },
+  });
 
   const { data: sets } = useQuery({
     queryKey: ["all-sets", user?.id],
@@ -37,7 +46,7 @@ function FlashcardsPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("flashcard_sets")
-        .select("id, title, topic, difficulty, created_at, flashcards(count)")
+        .select("id, title, topic, subject, difficulty, is_public, is_manual, folder_id, created_at, flashcards(count)")
         .order("created_at", { ascending: false });
       return data ?? [];
     },
@@ -106,11 +115,18 @@ function FlashcardsPage() {
     toast.success("Set deleted");
   }
 
+  const visibleSets = (sets ?? []).filter((s) =>
+    folderFilter === "all" ? true : folderFilter === "none" ? !s.folder_id : s.folder_id === folderFilter,
+  );
+
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Flashcards</h1>
-        <p className="mt-1 text-muted-foreground">Generate a deck from any topic, notes, or file — then study with spaced repetition.</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Flashcards</h1>
+          <p className="mt-1 text-muted-foreground">Generate a deck with AI, or build your own from scratch — then study with spaced repetition.</p>
+        </div>
+        <Button asChild variant="hero"><Link to="/create"><PenLine className="h-4 w-4" /> Create your own</Link></Button>
       </div>
 
       {/* Generator */}
@@ -155,15 +171,28 @@ function FlashcardsPage() {
 
       {/* Library */}
       <div>
-        <h2 className="mb-4 text-xl font-semibold">Your sets</h2>
-        {!sets || sets.length === 0 ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">Your sets</h2>
+          {(folders?.length ?? 0) > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <FilterChip active={folderFilter === "all"} onClick={() => setFolderFilter("all")}>All</FilterChip>
+              <FilterChip active={folderFilter === "none"} onClick={() => setFolderFilter("none")}>Unfiled</FilterChip>
+              {folders!.map((f) => (
+                <FilterChip key={f.id} active={folderFilter === f.id} onClick={() => setFolderFilter(f.id)}>
+                  <Folder className="h-3.5 w-3.5" /> {f.name}
+                </FilterChip>
+              ))}
+            </div>
+          )}
+        </div>
+        {!visibleSets || visibleSets.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border p-10 text-center text-muted-foreground">
             <Layers className="mx-auto h-8 w-8 opacity-50" />
-            <p className="mt-2">No flashcard sets yet. Generate your first deck above!</p>
+            <p className="mt-2">No flashcard sets here yet. Generate a deck above or create your own!</p>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {sets.map((s) => {
+            {visibleSets.map((s) => {
               const cardCount = (s.flashcards as { count: number }[] | null)?.[0]?.count ?? 0;
               return (
                 <div key={s.id} className="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-elegant">
@@ -176,13 +205,16 @@ function FlashcardsPage() {
                     </button>
                   </div>
                   <h3 className="mt-4 line-clamp-2 font-semibold">{s.title}</h3>
-                  <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    {s.subject && <span className="rounded-full bg-accent/10 px-2 py-0.5 text-accent-foreground">{s.subject}</span>}
                     <span className="rounded-full bg-muted px-2 py-0.5 capitalize">{s.difficulty}</span>
                     <span>{cardCount} cards</span>
+                    {s.is_public && <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-primary"><Globe className="h-3 w-3" /> Public</span>}
                   </div>
-                  <Button asChild variant="soft" className="mt-4 w-full">
-                    <Link to="/study/$setId" params={{ setId: s.id }}>Study</Link>
-                  </Button>
+                  <div className="mt-4 flex gap-2">
+                    <Button asChild variant="soft" className="flex-1"><Link to="/study/$setId" params={{ setId: s.id }}>Study</Link></Button>
+                    <Button asChild variant="outline" size="icon" aria-label="Edit"><Link to="/editor/$setId" params={{ setId: s.id }}><Pencil className="h-4 w-4" /></Link></Button>
+                  </div>
                 </div>
               );
             })}
@@ -190,5 +222,18 @@ function FlashcardsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+function FilterChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+        active ? "bg-brand text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
