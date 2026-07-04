@@ -4,7 +4,6 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,12 +74,14 @@ function AuthPage() {
   async function handleGoogle() {
     setLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      // Supabase-native OAuth: redirects the browser to Google, then back to
+      // /oauth/callback. Works on any host (no dependency on Lovable's platform).
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/oauth/callback` },
       });
-      if (result.error) throw result.error;
-      if (result.redirected) return;
-      navigate({ to: "/dashboard" });
+      if (error) throw error;
+      // On success the browser navigates away to Google; nothing else runs here.
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Google sign-in failed");
       setLoading(false);

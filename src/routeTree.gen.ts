@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedSlugRouteImport } from './routes/shared.$slug'
+import { Route as OauthCallbackRouteImport } from './routes/oauth.callback'
 import { Route as AuthenticatedStudyGuideRouteImport } from './routes/_authenticated/study-guide'
 import { Route as AuthenticatedQuizzesRouteImport } from './routes/_authenticated/quizzes'
 import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated/progress'
@@ -39,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
 const SharedSlugRoute = SharedSlugRouteImport.update({
   id: '/shared/$slug',
   path: '/shared/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthCallbackRoute = OauthCallbackRouteImport.update({
+  id: '/oauth/callback',
+  path: '/oauth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedStudyGuideRoute = AuthenticatedStudyGuideRouteImport.update({
@@ -172,6 +178,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   SharedSlugRoute: typeof SharedSlugRoute
+  OauthCallbackRoute: typeof OauthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -293,6 +300,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   SharedSlugRoute: SharedSlugRoute,
+  OauthCallbackRoute: OauthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
