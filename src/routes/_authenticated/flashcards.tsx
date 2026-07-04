@@ -101,7 +101,7 @@ function FlashcardsPage() {
       queryClient.invalidateQueries();
       toast.success(`Created ${result.cards.length} cards! +30 XP`);
       if (res.newBadges.length) toast.success(`🏅 New badge unlocked!`);
-      navigate({ to: "/study/$setId", params: { setId: set.id } });
+      navigate({ to: "/study/$setId", params: { setId: set.id }, search: { mode: "flashcards" } });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Generation failed");
     } finally {
