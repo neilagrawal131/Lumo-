@@ -32,6 +32,18 @@ const GoogleIcon = () => (
   </svg>
 );
 
+function friendlyAuthError(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes("invalid login credentials")) return "That email or password isn't right. Try again, or reset your password.";
+  if (m.includes("already registered") || m.includes("already been registered")) return "You already have an account with this email — try logging in instead.";
+  if (m.includes("email not confirmed")) return "Please confirm your email first — check your inbox for the link.";
+  if (m.includes("password should be at least")) return "Your password needs to be at least 6 characters.";
+  if (m.includes("provider is not enabled") || m.includes("unsupported provider")) return "Google sign-in isn't switched on for this site yet.";
+  if (m.includes("rate limit") || m.includes("too many")) return "Too many attempts — please wait a minute and try again.";
+  if (m.includes("signups not allowed") || m.includes("signup is disabled")) return "New sign-ups are currently disabled for this site.";
+  return message;
+}
+
 function AuthPage() {
   const { mode } = Route.useSearch();
   const navigate = useNavigate();
@@ -42,30 +54,37 @@ function AuthPage() {
   const [name, setName] = useState("");
   const [ageGroup, setAgeGroup] = useState<AgeGroup>("college");
   const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
       if (isSignup) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: `${window.location.origin}/oauth/callback`,
             data: { display_name: name || email.split("@")[0], age_group: ageGroup },
           },
         });
         if (error) throw error;
+        // If the project requires email confirmation, no session is returned yet.
+        if (!data.session) {
+          setEmailSent(true);
+          return;
+        }
         toast.success("Welcome to Etude! 🎉");
+        navigate({ to: "/dashboard" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back!");
+        navigate({ to: "/dashboard" });
       }
-      navigate({ to: "/dashboard" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong");
+      toast.error(friendlyAuthError(err instanceof Error ? err.message : "Something went wrong"));
     } finally {
       setLoading(false);
     }
@@ -83,7 +102,26 @@ function AuthPage() {
       if (error) throw error;
       // On success the browser navigates away to Google; nothing else runs here.
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
+      toast.error(friendlyAuthError(err instanceof Error ? err.message : "Google sign-in failed"));
+      setLoading(false);
+    }
+  }
+
+  async function handleForgotPassword() {
+    if (!email.trim()) {
+      toast.error("Enter your email above first, then tap “Forgot password”.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success("Password reset link sent — check your email.");
+    } catch (err) {
+      toast.error(friendlyAuthError(err instanceof Error ? err.message : "Couldn't send the reset email"));
+    } finally {
       setLoading(false);
     }
   }
@@ -118,6 +156,19 @@ function AuthPage() {
             {isSignup ? "Start learning smarter in seconds." : "Log in to continue your streak."}
           </p>
 
+          {emailSent ? (
+            <div className="mt-6 rounded-2xl border border-border bg-card p-6 text-center">
+              <div className="text-4xl">📬</div>
+              <h2 className="mt-3 text-lg font-semibold">Confirm your email</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                We sent a confirmation link to <span className="font-medium text-foreground">{email}</span>. Click it to activate your account, then come back and log in.
+              </p>
+              <Button variant="soft" className="mt-5 w-full" onClick={() => setEmailSent(false)}>
+                Back to sign in
+              </Button>
+            </div>
+          ) : (
+          <>
           <Button
             type="button"
             variant="outline"
@@ -145,7 +196,14 @@ function AuthPage() {
               <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                {!isSignup && (
+                  <button type="button" onClick={handleForgotPassword} className="text-xs font-medium text-primary hover:underline">
+                    Forgot password?
+                  </button>
+                )}
+              </div>
               <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
             </div>
 
@@ -178,6 +236,8 @@ function AuthPage() {
               {isSignup ? "Create account" : "Log in"}
             </Button>
           </form>
+          </>
+          )}
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             {isSignup ? "Already have an account? " : "New to Etude? "}
