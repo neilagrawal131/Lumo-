@@ -1,10 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output, NoObjectGeneratedError } from "ai";
 import { z } from "zod";
-import { createGeminiProvider } from "./ai-gateway.server";
+import { resolveAiModel } from "./ai-gateway.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const MODEL = "gemini-2.0-flash";
+const NO_AI = "AI is not configured yet. Add a GEMINI_API_KEY (or OPENAI_API_KEY / ANTHROPIC_API_KEY) in Vercel, then redeploy.";
 
 const ageStyle: Record<string, string> = {
   kids: "Use very simple words a young child understands, short sentences, and a friendly, playful tone. Keep facts concrete.",
@@ -34,9 +34,8 @@ export const generateFlashcards = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => FlashcardInput.parse(d))
   .handler(async ({ data }) => {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) throw new Error("AI is not configured yet. Add a GEMINI_API_KEY.");
-    const gateway = createGeminiProvider(key);
+    const aiModel = resolveAiModel();
+    if (!aiModel) throw new Error(NO_AI);
 
     const prompt = `Create ${data.count} high-quality study flashcards about the following topic or notes.
 Difficulty: ${data.difficulty}. Audience: ${data.ageGroup}. ${ageStyle[data.ageGroup]}
@@ -46,7 +45,7 @@ Return ONLY a JSON array like: [{"front":"...","back":"..."}]. No commentary.
 TOPIC / NOTES:
 ${data.topic}`;
 
-    const { text } = await generateText({ model: gateway(MODEL), prompt });
+    const { text } = await generateText({ model: aiModel, prompt });
     let parsed: unknown;
     try {
       parsed = safeParseModelJson(text);
@@ -79,9 +78,8 @@ export const generateQuiz = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => QuizInput.parse(d))
   .handler(async ({ data }) => {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) throw new Error("AI is not configured yet. Add a GEMINI_API_KEY.");
-    const gateway = createGeminiProvider(key);
+    const aiModel = resolveAiModel();
+    if (!aiModel) throw new Error(NO_AI);
 
     const prompt = `Create a quiz of ${data.count} questions about the topic or notes below.
 Difficulty: ${data.difficulty}. Audience: ${data.ageGroup}. ${ageStyle[data.ageGroup]}
@@ -92,7 +90,7 @@ Return ONLY a JSON array of question objects. No commentary.
 TOPIC / NOTES:
 ${data.topic}`;
 
-    const { text } = await generateText({ model: gateway(MODEL), prompt });
+    const { text } = await generateText({ model: aiModel, prompt });
     let parsed: unknown;
     try {
       parsed = safeParseModelJson(text);
@@ -123,12 +121,11 @@ export const generateStudyGuide = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => SummaryInput.parse(d))
   .handler(async ({ data }) => {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) throw new Error("AI is not configured yet. Add a GEMINI_API_KEY.");
-    const gateway = createGeminiProvider(key);
+    const aiModel = resolveAiModel();
+    if (!aiModel) throw new Error(NO_AI);
     const prompt = `Write a concise study guide about "${data.topic}" for a ${data.ageGroup} learner. ${ageStyle[data.ageGroup]}
 Return JSON: {"summary":"2-3 sentence overview","keyConcepts":["..."],"vocabulary":[{"term":"","definition":""}],"practiceQuestions":["..."]}. Return ONLY JSON.`;
-    const { text } = await generateText({ model: gateway(MODEL), prompt });
+    const { text } = await generateText({ model: aiModel, prompt });
     try {
       const parsed = safeParseModelJson(text);
       return z
@@ -155,11 +152,10 @@ export const explainAnswer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => ExplainInput.parse(d))
   .handler(async ({ data }) => {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) throw new Error("AI is not configured yet. Add a GEMINI_API_KEY.");
-    const gateway = createGeminiProvider(key);
+    const aiModel = resolveAiModel();
+    if (!aiModel) throw new Error(NO_AI);
     const { text } = await generateText({
-      model: gateway(MODEL),
+      model: aiModel,
       prompt: `Question: ${data.question}\nCorrect answer: ${data.correct}\nLearner's answer: ${data.chosen}\nIn 2-3 friendly sentences, explain why the correct answer is right and gently clarify the mistake.`,
     });
     return { explanation: text.trim() };

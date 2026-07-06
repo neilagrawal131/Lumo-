@@ -1,13 +1,38 @@
 // Server-only AI provider helper.
-// Uses Google Gemini via its OpenAI-compatible endpoint with a key you control
-// (GEMINI_API_KEY from Google AI Studio) — no dependency on Lovable's platform.
+// Picks whichever provider key is present in the environment, so you can use
+// Google Gemini (free), OpenAI, or Anthropic without code changes — just set
+// the matching env var in Vercel. No dependency on Lovable's platform.
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import type { LanguageModel } from "ai";
 
-export function createGeminiProvider(apiKey: string) {
-  return createOpenAICompatible({
-    name: "gemini",
-    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
-    supportsStructuredOutputs: false,
-    apiKey,
-  });
+export function resolveAiModel(): LanguageModel | null {
+  const gemini = process.env.GEMINI_API_KEY;
+  if (gemini) {
+    return createOpenAICompatible({
+      name: "gemini",
+      baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
+      supportsStructuredOutputs: false,
+      apiKey: gemini,
+    })(process.env.GEMINI_MODEL || "gemini-2.0-flash");
+  }
+
+  const openai = process.env.OPENAI_API_KEY;
+  if (openai) {
+    return createOpenAICompatible({
+      name: "openai",
+      baseURL: "https://api.openai.com/v1",
+      apiKey: openai,
+    })(process.env.OPENAI_MODEL || "gpt-4o-mini");
+  }
+
+  const anthropic = process.env.ANTHROPIC_API_KEY;
+  if (anthropic) {
+    return createOpenAICompatible({
+      name: "anthropic",
+      baseURL: "https://api.anthropic.com/v1",
+      apiKey: anthropic,
+    })(process.env.ANTHROPIC_MODEL || "claude-3-5-haiku-latest");
+  }
+
+  return null;
 }
