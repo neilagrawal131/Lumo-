@@ -1,14 +1,13 @@
-// Server-only Lovable AI Gateway provider helper.
+// Server-only AI provider helper.
+// Uses Google Gemini via its OpenAI-compatible endpoint with a key you control
+// (GEMINI_API_KEY from Google AI Studio) — no dependency on Lovable's platform.
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
-export function createLovableAiGatewayProvider(lovableApiKey: string) {
+export function createGeminiProvider(apiKey: string) {
   return createOpenAICompatible({
-    name: "lovable",
-    baseURL: "https://ai.gateway.lovable.dev/v1",
+    name: "gemini",
+    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
     supportsStructuredOutputs: false,
-    headers: {
-      "Lovable-API-Key": lovableApiKey,
-      "X-Lovable-AIG-SDK": "vercel-ai-sdk",
-    },
+    apiKey,
   });
 }

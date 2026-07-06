@@ -1,10 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output, NoObjectGeneratedError } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import { createGeminiProvider } from "./ai-gateway.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const MODEL = "google/gemini-3-flash-preview";
+const MODEL = "gemini-2.0-flash";
 
 const ageStyle: Record<string, string> = {
   kids: "Use very simple words a young child understands, short sentences, and a friendly, playful tone. Keep facts concrete.",
@@ -34,9 +34,9 @@ export const generateFlashcards = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => FlashcardInput.parse(d))
   .handler(async ({ data }) => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("AI is not configured.");
-    const gateway = createLovableAiGatewayProvider(key);
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) throw new Error("AI is not configured yet. Add a GEMINI_API_KEY.");
+    const gateway = createGeminiProvider(key);
 
     const prompt = `Create ${data.count} high-quality study flashcards about the following topic or notes.
 Difficulty: ${data.difficulty}. Audience: ${data.ageGroup}. ${ageStyle[data.ageGroup]}
@@ -79,9 +79,9 @@ export const generateQuiz = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => QuizInput.parse(d))
   .handler(async ({ data }) => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("AI is not configured.");
-    const gateway = createLovableAiGatewayProvider(key);
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) throw new Error("AI is not configured yet. Add a GEMINI_API_KEY.");
+    const gateway = createGeminiProvider(key);
 
     const prompt = `Create a quiz of ${data.count} questions about the topic or notes below.
 Difficulty: ${data.difficulty}. Audience: ${data.ageGroup}. ${ageStyle[data.ageGroup]}
@@ -123,9 +123,9 @@ export const generateStudyGuide = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => SummaryInput.parse(d))
   .handler(async ({ data }) => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("AI is not configured.");
-    const gateway = createLovableAiGatewayProvider(key);
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) throw new Error("AI is not configured yet. Add a GEMINI_API_KEY.");
+    const gateway = createGeminiProvider(key);
     const prompt = `Write a concise study guide about "${data.topic}" for a ${data.ageGroup} learner. ${ageStyle[data.ageGroup]}
 Return JSON: {"summary":"2-3 sentence overview","keyConcepts":["..."],"vocabulary":[{"term":"","definition":""}],"practiceQuestions":["..."]}. Return ONLY JSON.`;
     const { text } = await generateText({ model: gateway(MODEL), prompt });
@@ -155,9 +155,9 @@ export const explainAnswer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => ExplainInput.parse(d))
   .handler(async ({ data }) => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("AI is not configured.");
-    const gateway = createLovableAiGatewayProvider(key);
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) throw new Error("AI is not configured yet. Add a GEMINI_API_KEY.");
+    const gateway = createGeminiProvider(key);
     const { text } = await generateText({
       model: gateway(MODEL),
       prompt: `Question: ${data.question}\nCorrect answer: ${data.correct}\nLearner's answer: ${data.chosen}\nIn 2-3 friendly sentences, explain why the correct answer is right and gently clarify the mistake.`,
