@@ -32,6 +32,9 @@ const GoogleIcon = () => (
   </svg>
 );
 
+// Flip to true once Google OAuth is configured in Supabase.
+const GOOGLE_ENABLED = false;
+
 function friendlyAuthError(message: string): string {
   const m = message.toLowerCase();
   if (m.includes("invalid login credentials")) return "That email or password isn't right. Try again, or reset your password.";
@@ -169,22 +172,26 @@ function AuthPage() {
             </div>
           ) : (
           <>
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            className="mt-6 w-full"
-            onClick={handleGoogle}
-            disabled={loading}
-          >
-            <GoogleIcon /> Continue with Google
-          </Button>
+          {GOOGLE_ENABLED && (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="mt-6 w-full"
+                onClick={handleGoogle}
+                disabled={loading}
+              >
+                <GoogleIcon /> Continue with Google
+              </Button>
 
-          <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" /> or {isSignup ? "sign up" : "log in"} with email <span className="h-px flex-1 bg-border" />
-          </div>
+              <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="h-px flex-1 bg-border" /> or {isSignup ? "sign up" : "log in"} with email <span className="h-px flex-1 bg-border" />
+              </div>
+            </>
+          )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className={GOOGLE_ENABLED ? "space-y-4" : "mt-6 space-y-4"}>
             {isSignup && (
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
