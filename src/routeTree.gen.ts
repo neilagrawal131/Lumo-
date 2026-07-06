@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedSlugRouteImport } from './routes/shared.$slug'
 import { Route as OauthCallbackRouteImport } from './routes/oauth.callback'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedStudyGuideRouteImport } from './routes/_authenticated/study-guide'
 import { Route as AuthenticatedQuizzesRouteImport } from './routes/_authenticated/quizzes'
 import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated/progress'
@@ -45,6 +46,11 @@ const SharedSlugRoute = SharedSlugRouteImport.update({
 const OauthCallbackRoute = OauthCallbackRouteImport.update({
   id: '/oauth/callback',
   path: '/oauth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedStudyGuideRoute = AuthenticatedStudyGuideRouteImport.update({
@@ -179,6 +185,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   SharedSlugRoute: typeof SharedSlugRoute
   OauthCallbackRoute: typeof OauthCallbackRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -301,6 +308,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   SharedSlugRoute: SharedSlugRoute,
   OauthCallbackRoute: OauthCallbackRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
