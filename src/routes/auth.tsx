@@ -94,7 +94,7 @@ function AuthPage() {
       <div className="relative hidden overflow-hidden bg-hero p-12 lg:flex lg:flex-col lg:justify-between">
         <div className="relative z-10">
           <Link to="/" className="flex items-center gap-2 font-display text-xl font-bold text-primary-foreground">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20">✨</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20">📖</span>
             Etude
           </Link>
         </div>
