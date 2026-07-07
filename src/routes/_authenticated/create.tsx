@@ -9,6 +9,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FREE_SET_LIMIT, isPremium } from "@/lib/plans";
 
 export const Route = createFileRoute("/_authenticated/create")({
   component: CreateSetPage,
@@ -58,6 +59,17 @@ function CreateSetPage() {
     if (!title.trim()) {
       toast.error("Give your study set a title first.");
       return;
+    }
+    if (!isPremium(profile?.plan)) {
+      const { count } = await supabase
+        .from("flashcard_sets")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user!.id);
+      if ((count ?? 0) >= FREE_SET_LIMIT) {
+        toast.error("Free plan is limited to 10 study sets. Upgrade to Premium for unlimited.");
+        navigate({ to: "/pricing" });
+        return;
+      }
     }
     setCreating(true);
     try {
