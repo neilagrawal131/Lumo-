@@ -1,5 +1,6 @@
 // Server-only Stripe REST helper. Calls the Stripe API directly with fetch so
 // we don't need the stripe SDK as a dependency. Uses STRIPE_SECRET_KEY.
+// (Checkout + hosted Customer Portal; sandbox test mode until live keys are set.)
 const STRIPE_API = "https://api.stripe.com/v1";
 
 type Params = Record<string, string | number | boolean | undefined>;
