@@ -3,8 +3,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Layers, Loader2, Sparkles, Trash2, FileUp, PenLine, Pencil, Globe, Folder } from "lucide-react";
-import { generateFlashcards } from "@/lib/ai.functions";
+import { Layers, Loader2, Sparkles, Trash2, FileUp, PenLine, Pencil, Globe, Folder, ImagePlus } from "lucide-react";
+import { generateFlashcards, generateSetFromImage } from "@/lib/ai.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -21,18 +21,51 @@ export const Route = createFileRoute("/_authenticated/flashcards")({
   component: FlashcardsPage,
 });
 
+// Downscale + re-encode in the browser so the upload stays well under the
+// serverless request-body limit (vision models don't need full resolution).
+async function downscaleImage(file: File, maxDim = 1600, quality = 0.82): Promise<string> {
+  const dataUrl = await new Promise<string>((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result as string);
+    r.onerror = () => rej(new Error("read"));
+    r.readAsDataURL(file);
+  });
+  try {
+    const img = await new Promise<HTMLImageElement>((res, rej) => {
+      const im = new Image();
+      im.onload = () => res(im);
+      im.onerror = () => rej(new Error("img"));
+      im.src = dataUrl;
+    });
+    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * scale));
+    const h = Math.max(1, Math.round(img.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return dataUrl;
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL("image/jpeg", quality);
+  } catch {
+    return dataUrl;
+  }
+}
+
 function FlashcardsPage() {
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const gen = useServerFn(generateFlashcards);
+  const genImage = useServerFn(generateSetFromImage);
   const { topic: initialTopic } = Route.useSearch();
 
   const [topic, setTopic] = useState(initialTopic ?? "");
   const [count, setCount] = useState(10);
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [loading, setLoading] = useState(false);
+  const [imgLoading, setImgLoading] = useState(false);
   const [folderFilter, setFolderFilter] = useState<string>("all");
 
   const { data: folders } = useQuery({
@@ -68,59 +101,82 @@ function FlashcardsPage() {
     }
   }
 
+  async function ensureCanCreate(): Promise<boolean> {
+    if (isPremium(profile?.plan)) return true;
+    const { count: setCount } = await supabase
+      .from("flashcard_sets")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user!.id);
+    if ((setCount ?? 0) >= FREE_SET_LIMIT) {
+      toast.error("Free plan is limited to 10 study sets. Upgrade to Premium for unlimited.");
+      navigate({ to: "/pricing" });
+      return false;
+    }
+    return true;
+  }
+
+  async function persistSet(setTitle: string, generated: { front: string; back: string }[], topicLabel: string) {
+    const { data: set, error } = await supabase
+      .from("flashcard_sets")
+      .insert({
+        user_id: user!.id,
+        title: setTitle,
+        topic: topicLabel.slice(0, 200),
+        difficulty,
+        age_group: profile?.age_group ?? "adults",
+      })
+      .select()
+      .single();
+    if (error || !set) throw error ?? new Error("Could not save set");
+    const rows = generated.map((c, i) => ({ set_id: set.id, user_id: user!.id, front: c.front, back: c.back, position: i }));
+    await supabase.from("flashcards").insert(rows);
+    await awardBadge(user!.id, "first_set");
+    const res = await recordActivity(user!.id, "flashcards", setTitle, 30);
+    queryClient.invalidateQueries();
+    toast.success(`Created ${generated.length} cards! +30 XP`);
+    if (res.newBadges.length) toast.success("🏅 New badge unlocked!");
+    navigate({ to: "/study/$setId", params: { setId: set.id }, search: { mode: "flashcards" } });
+  }
+
   async function handleGenerate() {
     if (!topic.trim()) {
       toast.error("Enter a topic or paste some notes first.");
       return;
     }
-    if (!isPremium(profile?.plan)) {
-      const { count: setCount } = await supabase
-        .from("flashcard_sets")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user!.id);
-      if ((setCount ?? 0) >= FREE_SET_LIMIT) {
-        toast.error("Free plan is limited to 10 study sets. Upgrade to Premium for unlimited.");
-        navigate({ to: "/pricing" });
-        return;
-      }
-    }
+    if (!(await ensureCanCreate())) return;
     setLoading(true);
     try {
-      const result = await gen({
-        data: { topic, count, difficulty, ageGroup: profile?.age_group ?? "adults" },
-      });
-      const { data: set, error } = await supabase
-        .from("flashcard_sets")
-        .insert({
-          user_id: user!.id,
-          title: result.title,
-          topic: topic.slice(0, 200),
-          difficulty,
-          age_group: profile?.age_group ?? "adults",
-        })
-        .select()
-        .single();
-      if (error || !set) throw error ?? new Error("Could not save set");
-
-      const rows = result.cards.map((c, i) => ({
-        set_id: set.id,
-        user_id: user!.id,
-        front: c.front,
-        back: c.back,
-        position: i,
-      }));
-      await supabase.from("flashcards").insert(rows);
-
-      await awardBadge(user!.id, "first_set");
-      const res = await recordActivity(user!.id, "flashcards", result.title, 30);
-      queryClient.invalidateQueries();
-      toast.success(`Created ${result.cards.length} cards! +30 XP`);
-      if (res.newBadges.length) toast.success(`🏅 New badge unlocked!`);
-      navigate({ to: "/study/$setId", params: { setId: set.id }, search: { mode: "flashcards" } });
+      const result = await gen({ data: { topic, count, difficulty, ageGroup: profile?.age_group ?? "adults" } });
+      await persistSet(result.title, result.cards, topic);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Generation failed");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file.");
+      return;
+    }
+    if (file.size > 6 * 1024 * 1024) {
+      toast.error("Image must be under 6MB.");
+      return;
+    }
+    if (!(await ensureCanCreate())) return;
+    setImgLoading(true);
+    try {
+      const dataUrl = await downscaleImage(file);
+      const result = await genImage({ data: { image: dataUrl, count, difficulty, ageGroup: profile?.age_group ?? "adults" } });
+      await persistSet(result.title, result.cards, "From image");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't create a set from the image");
+    } finally {
+      setImgLoading(false);
     }
   }
 
@@ -179,6 +235,11 @@ function FlashcardsPage() {
             <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-input px-4 py-2.5 text-sm font-medium hover:bg-muted">
               <FileUp className="h-4 w-4" /> Upload notes (.txt)
               <input type="file" accept=".txt,.md,text/plain" className="hidden" onChange={handleFile} />
+            </label>
+            <label className={`inline-flex items-center gap-2 rounded-xl border border-input px-4 py-2.5 text-sm font-medium hover:bg-muted ${imgLoading ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
+              {imgLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+              {imgLoading ? "Reading image…" : "Upload image"}
+              <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={imgLoading} />
             </label>
           </div>
         </div>
