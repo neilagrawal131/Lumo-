@@ -13,7 +13,7 @@ export function resolveAiModel(): LanguageModel | null {
       baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
       supportsStructuredOutputs: false,
       apiKey: gemini,
-    })(process.env.GEMINI_MODEL || "gemini-2.0-flash");
+    })(process.env.GEMINI_MODEL || "gemini-2.0-flash-lite");
   }
 
   const openai = process.env.OPENAI_API_KEY;
