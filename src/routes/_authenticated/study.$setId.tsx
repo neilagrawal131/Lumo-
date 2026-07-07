@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { relatedTopics } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ModePicker } from "@/components/study/ModePicker";
 import { FlashcardMode } from "@/components/study/FlashcardMode";
 import { MatchingMode } from "@/components/study/MatchingMode";
@@ -39,6 +40,7 @@ function StudyHub() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [seed, setSeed] = useState(0);
+  const [timedSeconds, setTimedSeconds] = useState<number | null>(null);
 
   const { data: setData } = useQuery({
     queryKey: ["set", setId],
@@ -68,6 +70,7 @@ function StudyHub() {
 
   function goMode(next?: StudyModeKey) {
     setSeed((s) => s + 1);
+    setTimedSeconds(null);
     navigate({ to: "/study/$setId", params: { setId }, search: next ? { mode: next } : {} });
   }
 
@@ -154,19 +157,22 @@ function StudyHub() {
           />
         )}
 
-        {(IMMEDIATE_MODES.includes(mode) || DEFERRED_MODES.includes(mode)) && (
-          <QuizEngine
-            key={`${mode}-${seed}`}
-            title={title}
-            modeKey={mode}
-            questions={questions}
-            feedback={DEFERRED_MODES.includes(mode) ? "deferred" : "immediate"}
-            timeLimitSec={mode === "timed" ? Math.max(60, questions.length * 45) : undefined}
-            userId={user!.id}
-            onRestart={() => setSeed((s) => s + 1)}
-            onExit={() => goMode(undefined)}
-          />
-        )}
+        {(IMMEDIATE_MODES.includes(mode) || DEFERRED_MODES.includes(mode)) &&
+          (mode === "timed" && timedSeconds === null ? (
+            <TimedSetup count={questions.length} onStart={setTimedSeconds} onExit={() => goMode(undefined)} />
+          ) : (
+            <QuizEngine
+              key={`${mode}-${seed}`}
+              title={title}
+              modeKey={mode}
+              questions={questions}
+              feedback={DEFERRED_MODES.includes(mode) ? "deferred" : "immediate"}
+              timeLimitSec={mode === "timed" ? timedSeconds ?? undefined : undefined}
+              userId={user!.id}
+              onRestart={() => setSeed((s) => s + 1)}
+              onExit={() => goMode(undefined)}
+            />
+          ))}
 
         {GUIDE_MODES.includes(mode) && (
           <GuideView
@@ -182,6 +188,62 @@ function StudyHub() {
       </div>
 
       <p className="sr-only">{meta.description}</p>
+    </div>
+  );
+}
+
+function TimedSetup({ count, onStart, onExit }: { count: number; onStart: (seconds: number) => void; onExit: () => void }) {
+  const presets = [5, 10, 15, 20, 30];
+  const suggested = Math.max(1, Math.round((count * 45) / 60));
+  const [custom, setCustom] = useState("");
+
+  return (
+    <div className="mx-auto max-w-md">
+      <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-elegant">
+        <div className="text-4xl">⏱️</div>
+        <h2 className="mt-3 text-2xl font-bold">Timed Exam</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{count} questions — choose your time limit.</p>
+
+        <div className="mt-6 grid grid-cols-3 gap-2">
+          {presets.map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => onStart(m * 60)}
+              className="rounded-xl border border-border px-3 py-3 text-sm font-semibold transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:text-primary"
+            >
+              {m} min
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => onStart(suggested * 60)}
+            className="rounded-xl border border-primary/40 bg-primary/5 px-3 py-2 text-sm font-semibold text-primary"
+          >
+            {suggested} min
+            <span className="block text-[10px] font-normal opacity-70">suggested</span>
+          </button>
+        </div>
+
+        <div className="mt-4 flex items-center gap-2">
+          <Input
+            type="number"
+            min={1}
+            max={180}
+            value={custom}
+            onChange={(e) => setCustom(e.target.value)}
+            placeholder="Custom minutes"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && Number(custom) >= 1) onStart(Math.min(180, Number(custom)) * 60);
+            }}
+          />
+          <Button variant="hero" disabled={!custom || Number(custom) < 1} onClick={() => onStart(Math.min(180, Math.max(1, Number(custom))) * 60)}>
+            Start
+          </Button>
+        </div>
+
+        <button type="button" onClick={onExit} className="mt-4 text-sm text-muted-foreground hover:underline">Cancel</button>
+      </div>
     </div>
   );
 }
