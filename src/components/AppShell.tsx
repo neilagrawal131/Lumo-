@@ -3,6 +3,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard,
+  Library,
   Layers,
   ClipboardList,
   BookOpen,
@@ -22,6 +23,7 @@ import { levelProgress, xpIntoLevel, XP_PER_LEVEL } from "@/lib/gamification";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/sets", label: "Study Sets", icon: Library },
   { to: "/flashcards", label: "Flashcards", icon: Layers },
   { to: "/quizzes", label: "Quizzes", icon: ClipboardList },
   { to: "/study-guide", label: "Study Guide", icon: BookOpen },
