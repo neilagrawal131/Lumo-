@@ -22,17 +22,17 @@ function safeParseModelJson(text: string): unknown {
   return JSON.parse(slice);
 }
 
-// Run a text generation with a friendly message for rate limits (free-tier 429s).
+// Run a text generation. Surfaces the provider's raw error detail so the exact
+// cause (per-minute vs per-day quota, region/tier, bad model) is diagnosable.
 async function runText(model: LanguageModel, prompt: string): Promise<string> {
   try {
     const { text } = await generateText({ model, prompt, maxRetries: 1 });
     return text;
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    if (/too many requests|rate limit|429|resource exhausted|quota/i.test(msg)) {
-      throw new Error("The AI is busy right now (free-tier rate limit). Please wait a minute and try again.");
-    }
-    throw e;
+    const err = e as { statusCode?: number; responseBody?: string; message?: string };
+    const detail = (err.responseBody || err.message || String(e)).replace(/\s+/g, " ").slice(0, 500);
+    const status = err.statusCode ? `HTTP ${err.statusCode}: ` : "";
+    throw new Error(`AI request failed. ${status}${detail}`);
   }
 }
 
