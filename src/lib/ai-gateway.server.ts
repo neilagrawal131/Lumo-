@@ -6,6 +6,17 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { LanguageModel } from "ai";
 
 export function resolveAiModel(): LanguageModel | null {
+  // Groq first — a genuinely free API tier (no credit card, works in most
+  // regions), unlike Gemini's free tier which is unavailable in some places.
+  const groq = process.env.GROQ_API_KEY;
+  if (groq) {
+    return createOpenAICompatible({
+      name: "groq",
+      baseURL: "https://api.groq.com/openai/v1",
+      apiKey: groq,
+    })(process.env.GROQ_MODEL || "llama-3.3-70b-versatile");
+  }
+
   const gemini = process.env.GEMINI_API_KEY;
   if (gemini) {
     return createOpenAICompatible({
