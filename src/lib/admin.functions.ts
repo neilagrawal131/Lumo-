@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+// Admin actions require SUPABASE_SERVICE_ROLE_KEY (server-only) and re-verify
+// the caller's admin role from the database on every call.
 type Ctx = { supabase: any; userId: string; claims: Record<string, unknown> };
 
 // Verify — from the database, not the client — that the caller is an admin.
