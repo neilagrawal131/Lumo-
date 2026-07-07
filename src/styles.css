@@ -271,3 +271,17 @@
 @utility animate-flip-in {
   animation: flip-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+/* Shiny metallic-black text for the Premium badge (readable in light & dark) */
+@keyframes premium-shine {
+  from { background-position: 200% center; }
+  to { background-position: -200% center; }
+}
+@utility text-premium {
+  background: linear-gradient(110deg, #1f1f1f 0%, #7a7a7a 28%, #ffffff 50%, #7a7a7a 72%, #1f1f1f 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: premium-shine 3.5s linear infinite;
+}
