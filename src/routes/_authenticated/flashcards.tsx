@@ -68,6 +68,7 @@ function FlashcardsPage() {
   const [loading, setLoading] = useState(false);
   const [imgLoading, setImgLoading] = useState(false);
   const [fileLoading, setFileLoading] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [folderFilter, setFolderFilter] = useState<string>("all");
 
   const { data: folders } = useQuery({
@@ -91,10 +92,7 @@ function FlashcardsPage() {
     },
   });
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+  async function handleDocFile(file: File) {
     setFileLoading(true);
     try {
       const text = await extractTextFromFile(file);
@@ -109,6 +107,15 @@ function FlashcardsPage() {
     } finally {
       setFileLoading(false);
     }
+  }
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (file) void handleDocFile(file);
+  }
+  function routeFile(file: File) {
+    if (file.type.startsWith("image/")) void handleImageFile(file);
+    else void handleDocFile(file);
   }
 
   async function ensureCanCreate(): Promise<boolean> {
@@ -165,10 +172,7 @@ function FlashcardsPage() {
     }
   }
 
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+  async function handleImageFile(file: File) {
     if (!file.type.startsWith("image/")) {
       toast.error("Please choose an image file.");
       return;
@@ -188,6 +192,11 @@ function FlashcardsPage() {
     } finally {
       setImgLoading(false);
     }
+  }
+  function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (file) void handleImageFile(file);
   }
 
   async function deleteSet(id: string) {
@@ -211,7 +220,18 @@ function FlashcardsPage() {
       </div>
 
       {/* Generator */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragEnter={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={(e) => { e.preventDefault(); if (e.currentTarget === e.target) setDragging(false); }}
+        onDrop={(e) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files?.[0]; if (f) routeFile(f); }}
+        className={`relative rounded-2xl border bg-card p-6 shadow-sm transition-colors ${dragging ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
+      >
+        {dragging && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-primary/5 backdrop-blur-sm">
+            <span className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-elegant">Drop your PDF, doc or image to add it</span>
+          </div>
+        )}
         <h2 className="flex items-center gap-2 font-semibold"><Sparkles className="h-5 w-5 text-primary" /> AI Flashcard Generator</h2>
         <div className="mt-4 space-y-4">
           <div className="space-y-2">
@@ -252,6 +272,7 @@ function FlashcardsPage() {
               {imgLoading ? "Reading image…" : "Upload image"}
               <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={imgLoading} />
             </label>
+            <p className="basis-full text-xs text-muted-foreground">…or drag &amp; drop a PDF, Word/PPT file, or image onto this card.</p>
           </div>
         </div>
       </div>
