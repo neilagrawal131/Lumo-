@@ -92,13 +92,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Etude turns any topic, notes, or PDF into AI-generated flashcards, quizzes, and study guides. Track progress, build streaks, and learn smarter.",
       },
       { name: "author", content: "Etude" },
+      { name: "theme-color", content: "#14b8a6" },
+      { property: "og:site_name", content: "Etude" },
       { property: "og:title", content: "Etude — Learn Smarter with AI" },
       {
         property: "og:description",
         content: "AI-generated flashcards, quizzes & study guides with progress tracking and gamified learning.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "/favicon.svg?v=2" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Etude — Learn Smarter with AI" },
+      {
+        name: "twitter:description",
+        content: "AI-generated flashcards, quizzes & study guides with progress tracking and gamified learning.",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
