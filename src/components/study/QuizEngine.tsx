@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Check, X, ArrowRight, RotateCcw, Sparkles, Loader2, Clock, Timer } from "lucide-react";
-import { explainAnswer } from "@/lib/ai.functions";
+import { Check, X, ArrowRight, RotateCcw, Sparkles, Loader2, Clock, Timer, Lightbulb } from "lucide-react";
+import { explainAnswer, getHint } from "@/lib/ai.functions";
 import { recordActivity, awardBadge } from "@/lib/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,9 @@ export function QuizEngine({
 }: Props) {
   const queryClient = useQueryClient();
   const explain = useServerFn(explainAnswer);
+  const hintFn = useServerFn(getHint);
+  const [hints, setHints] = useState<Record<number, string>>({});
+  const [hintLoading, setHintLoading] = useState<Record<number, boolean>>({});
 
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<string[]>(() => Array(questions.length).fill(""));
@@ -139,6 +142,20 @@ export function QuizEngine({
       toast.error("Couldn't load an explanation. Try again.");
     } finally {
       setExplaining((p) => ({ ...p, [i]: false }));
+    }
+  }
+
+  async function requestHint(i: number) {
+    if (hints[i] || hintLoading[i]) return;
+    setHintLoading((p) => ({ ...p, [i]: true }));
+    try {
+      const q = questions[i];
+      const res = await hintFn({ data: { question: q.kind === "truefalse" ? `${q.term} — "${q.shown}". True or false?` : q.prompt, answer: correctText(q) } });
+      setHints((p) => ({ ...p, [i]: res.hint }));
+    } catch {
+      toast.error("Couldn't load a hint. Try again.");
+    } finally {
+      setHintLoading((p) => ({ ...p, [i]: false }));
     }
   }
 
@@ -244,6 +261,11 @@ export function QuizEngine({
         {q.kind === "fill" && q.hint && q.hint !== "Type the answer" && (
           <p className="mt-2 text-sm text-muted-foreground">Hint: {q.hint}</p>
         )}
+        {hints[idx] && (
+          <p className="mt-3 flex items-start gap-2 rounded-xl bg-warning/10 p-3 text-sm text-warning-foreground">
+            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0" /> {hints[idx]}
+          </p>
+        )}
 
         {/* --- Inputs by kind --- */}
         {q.kind === "mcq" && (
@@ -347,7 +369,14 @@ export function QuizEngine({
 
       {/* --- Controls --- */}
       <div className="mt-6 flex items-center justify-between gap-3">
-        <Button variant="ghost" size="sm" onClick={onExit}>Exit</Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={onExit}>Exit</Button>
+          {!revealed && !hints[idx] && (
+            <Button variant="ghost" size="sm" onClick={() => requestHint(idx)} disabled={hintLoading[idx]}>
+              {hintLoading[idx] ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lightbulb className="h-4 w-4" />} Hint
+            </Button>
+          )}
+        </div>
         {feedback === "immediate" ? (
           revealed ? (
             <Button variant="hero" size="lg" onClick={next}>

@@ -5,13 +5,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowLeft, Loader2, Plus, Trash2, Copy, ArrowUp, ArrowDown, ImagePlus, X,
-  Check, Cloud, Globe, Lock, Share2, Sparkles, BookOpen,
+  Check, Cloud, Globe, Lock, Share2, Sparkles, BookOpen, Wand2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { uploadFlashcardImage } from "@/lib/flashcard-images";
-import { generateQuiz } from "@/lib/ai.functions";
+import { generateQuiz, generateFlashcards, rewriteCard } from "@/lib/ai.functions";
 import { awardBadge } from "@/lib/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +41,10 @@ function EditorPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const genQuiz = useServerFn(generateQuiz);
+  const genCards = useServerFn(generateFlashcards);
+  const rewrite = useServerFn(rewriteCard);
+  const [rewritingId, setRewritingId] = useState<string | null>(null);
+  const [addingCards, setAddingCards] = useState(false);
 
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
@@ -178,6 +182,50 @@ function EditorPage() {
     }
   }
 
+  async function rewriteCardFn(card: CardDraft, direction: "easier" | "harder") {
+    if (!card.front.trim() || !card.back.trim()) {
+      toast.error("Fill in the card first.");
+      return;
+    }
+    setRewritingId(card.id);
+    try {
+      const res = await rewrite({
+        data: { front: card.front, back: card.back, direction, ageGroup: profile?.age_group ?? "adults" },
+      });
+      updateCard(card.id, { front: res.front, back: res.back });
+      toast.success(direction === "easier" ? "Rewrote it easier" : "Made it more challenging");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Rewrite failed");
+    } finally {
+      setRewritingId(null);
+    }
+  }
+
+  async function addMoreWithAI() {
+    const existing = cards.filter((c) => c.front.trim()).map((c) => c.front).slice(0, 40);
+    const topicBase = title.trim() || subject.trim();
+    if (!topicBase && existing.length === 0) {
+      toast.error("Add a title or a few cards first.");
+      return;
+    }
+    setAddingCards(true);
+    try {
+      const topic = (
+        (topicBase ? `Topic: ${topicBase}\n` : "") +
+        (existing.length ? `Create NEW flashcards that do NOT duplicate these:\n${existing.join("\n")}` : "")
+      ).slice(0, 4000);
+      const res = await genCards({
+        data: { topic, count: 5, difficulty: "medium", ageGroup: profile?.age_group ?? "adults" },
+      });
+      setCards((cs) => [...cs, ...res.cards.map((c) => ({ id: crypto.randomUUID(), front: c.front, back: c.back, image_url: null }))]);
+      toast.success(`Added ${res.cards.length} cards`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't add cards");
+    } finally {
+      setAddingCards(false);
+    }
+  }
+
   async function copyShareLink() {
     if (!shareSlug) return;
     const url = `${window.location.origin}/shared/${shareSlug}`;
@@ -300,6 +348,15 @@ function EditorPage() {
                 <Textarea rows={3} value={card.back} onChange={(e) => updateCard(card.id, { back: e.target.value })} placeholder="e.g. The process plants use to convert light into energy." />
               </div>
             </div>
+            <div className="mt-3 flex items-center gap-1">
+              <span className="mr-1 text-xs font-medium text-muted-foreground">AI:</span>
+              <Button variant="ghost" size="sm" disabled={rewritingId === card.id} onClick={() => rewriteCardFn(card, "easier")}>
+                {rewritingId === card.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />} Easier
+              </Button>
+              <Button variant="ghost" size="sm" disabled={rewritingId === card.id} onClick={() => rewriteCardFn(card, "harder")}>
+                <Wand2 className="h-3.5 w-3.5" /> Harder
+              </Button>
+            </div>
             <div className="mt-3">
               {card.image_url ? (
                 <div className="relative inline-block">
@@ -323,7 +380,13 @@ function EditorPage() {
           </div>
         ))}
 
-        <Button variant="outline" className="w-full" onClick={addCard}><Plus className="h-4 w-4" /> Add card</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" className="flex-1" onClick={addCard}><Plus className="h-4 w-4" /> Add card</Button>
+          <Button variant="soft" className="flex-1" onClick={addMoreWithAI} disabled={addingCards}>
+            {addingCards ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {addingCards ? "Adding…" : "Add cards with AI"}
+          </Button>
+        </div>
       </div>
 
       {/* Actions */}
