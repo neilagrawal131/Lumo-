@@ -6,6 +6,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { LanguageModel } from "ai";
 
 export function resolveAiModel(): LanguageModel | null {
+  // Provider priority: Groq → Gemini → OpenAI → Anthropic (first key present wins).
   // Groq first — a genuinely free API tier (no credit card, works in most
   // regions), unlike Gemini's free tier which is unavailable in some places.
   const groq = process.env.GROQ_API_KEY;
