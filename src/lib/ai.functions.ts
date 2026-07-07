@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output, NoObjectGeneratedError, type LanguageModel } from "ai";
 import { z } from "zod";
-import { resolveAiModel } from "./ai-gateway.server";
+import { resolveAiModel, resolveVisionModel } from "./ai-gateway.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const NO_AI = "AI is not configured yet. Add a GROQ_API_KEY (free) — or GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY — in Vercel, then redeploy.";
@@ -22,23 +22,25 @@ function safeParseModelJson(text: string): unknown {
   return JSON.parse(slice);
 }
 
-// Run a text generation. Surfaces the provider's raw error detail so the exact
-// cause (per-minute vs per-day quota, region/tier, bad model) is diagnosable.
+// Surfaces the provider's raw error detail. The AI SDK wraps failures in a
+// RetryError; the real provider error is nested in lastError/errors.
+function aiError(e: unknown): never {
+  const top = e as { lastError?: unknown; errors?: unknown[]; statusCode?: number };
+  const inner = (top.lastError ??
+    (Array.isArray(top.errors) ? top.errors[top.errors.length - 1] : undefined) ??
+    top) as { statusCode?: number; responseBody?: string; data?: unknown; message?: string };
+  const status = inner.statusCode ?? top.statusCode;
+  const raw = inner.responseBody ?? inner.data ?? inner.message ?? String(inner);
+  const detail = (typeof raw === "string" ? raw : JSON.stringify(raw)).replace(/\s+/g, " ").slice(0, 600);
+  throw new Error(`AI failed${status ? ` [${status}]` : ""}: ${detail}`);
+}
+
 async function runText(model: LanguageModel, prompt: string): Promise<string> {
   try {
     const { text } = await generateText({ model, prompt, maxRetries: 1 });
     return text;
   } catch (e) {
-    // The AI SDK wraps failures in a RetryError; the real provider error (with
-    // Google's quota message) is nested in lastError/errors.
-    const top = e as { lastError?: unknown; errors?: unknown[]; statusCode?: number };
-    const inner = (top.lastError ??
-      (Array.isArray(top.errors) ? top.errors[top.errors.length - 1] : undefined) ??
-      top) as { statusCode?: number; responseBody?: string; data?: unknown; message?: string };
-    const status = inner.statusCode ?? top.statusCode;
-    const raw = inner.responseBody ?? inner.data ?? inner.message ?? String(inner);
-    const detail = (typeof raw === "string" ? raw : JSON.stringify(raw)).replace(/\s+/g, " ").slice(0, 600);
-    throw new Error(`AI failed${status ? ` [${status}]` : ""}: ${detail}`);
+    aiError(e);
   }
 }
 
@@ -229,6 +231,48 @@ Current back: ${data.back}`,
       return z.object({ front: z.string(), back: z.string() }).parse(parsed);
     } catch {
       throw new Error("The AI response could not be read. Please try again.");
+    }
+  });
+
+// ---------- Study set from an image (vision) ----------
+const ImageSetInput = z.object({
+  image: z.string().min(1).max(12_000_000), // data URL
+  count: z.number().int().min(3).max(20).default(10),
+  difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
+  ageGroup: z.enum(["kids", "teens", "college", "adults"]).default("adults"),
+});
+export const generateSetFromImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => ImageSetInput.parse(d))
+  .handler(async ({ data }) => {
+    const model = resolveVisionModel();
+    if (!model) throw new Error(NO_AI);
+    const prompt = `Look at this image — it may be class notes, a textbook page, a diagram, a slide, or a photo. Read and understand its content, then create ${data.count} study flashcards from it.
+Difficulty: ${data.difficulty}. Audience: ${data.ageGroup}. ${ageStyle[data.ageGroup]}
+Each flashcard has a "front" (a concise question or term) and a "back" (a clear, correct answer).
+Return ONLY JSON: {"title":"a short title","cards":[{"front":"...","back":"..."}]}.`;
+
+    let text = "";
+    try {
+      const res = await generateText({
+        model,
+        maxRetries: 1,
+        messages: [
+          { role: "user", content: [{ type: "text", text: prompt }, { type: "image", image: data.image }] },
+        ],
+      });
+      text = res.text;
+    } catch (e) {
+      aiError(e);
+    }
+
+    try {
+      const parsed = safeParseModelJson(text) as { title?: unknown; cards?: unknown };
+      const cards = z.array(z.object({ front: z.string(), back: z.string() })).parse(parsed.cards ?? parsed).slice(0, data.count);
+      const title = (typeof parsed.title === "string" && parsed.title.trim()) || "Study set from image";
+      return { title, cards };
+    } catch {
+      throw new Error("Couldn't read that image clearly. Try a sharper photo, or crop to just the text.");
     }
   });
 
