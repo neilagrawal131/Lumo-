@@ -16,6 +16,8 @@ import { Label } from "@/components/ui/label";
 import { DifficultyPicker } from "@/components/DifficultyPicker";
 
 export const Route = createFileRoute("/_authenticated/flashcards")({
+  validateSearch: (s: Record<string, unknown>): { topic?: string } =>
+    typeof s.topic === "string" ? { topic: s.topic } : {},
   component: FlashcardsPage,
 });
 
@@ -25,8 +27,9 @@ function FlashcardsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const gen = useServerFn(generateFlashcards);
+  const { topic: initialTopic } = Route.useSearch();
 
-  const [topic, setTopic] = useState("");
+  const [topic, setTopic] = useState(initialTopic ?? "");
   const [count, setCount] = useState(10);
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [loading, setLoading] = useState(false);

@@ -180,3 +180,74 @@ export const explainAnswer = createServerFn({ method: "POST" })
     );
     return { explanation: text.trim() };
   });
+
+// ---------- Hint (no spoilers) ----------
+const HintInput = z.object({
+  question: z.string().min(1).max(2000),
+  answer: z.string().max(1000).optional(),
+});
+export const getHint = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => HintInput.parse(d))
+  .handler(async ({ data }) => {
+    const aiModel = resolveAiModel();
+    if (!aiModel) throw new Error(NO_AI);
+    const text = await runText(
+      aiModel,
+      `Give ONE short hint (max 1 sentence) that nudges the learner toward the answer WITHOUT revealing it. Do not state or spell the answer.
+Question: ${data.question}${data.answer ? `\n(The answer is "${data.answer}" — never reveal it.)` : ""}`,
+    );
+    return { hint: text.trim() };
+  });
+
+// ---------- Rewrite a flashcard easier / harder ----------
+const RewriteInput = z.object({
+  front: z.string().min(1).max(2000),
+  back: z.string().min(1).max(2000),
+  direction: z.enum(["easier", "harder"]),
+  ageGroup: z.enum(["kids", "teens", "college", "adults"]).default("adults"),
+});
+export const rewriteCard = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => RewriteInput.parse(d))
+  .handler(async ({ data }) => {
+    const aiModel = resolveAiModel();
+    if (!aiModel) throw new Error(NO_AI);
+    const goal =
+      data.direction === "easier"
+        ? "Make it simpler and easier to understand — plainer wording, a clearer or more basic version of the same concept."
+        : "Make it more challenging — more precise, deeper, or more advanced, while testing the same underlying concept.";
+    const text = await runText(
+      aiModel,
+      `Rewrite this flashcard. ${goal} Keep it about the same topic. ${ageStyle[data.ageGroup]}
+Return ONLY JSON: {"front":"...","back":"..."}.
+Current front: ${data.front}
+Current back: ${data.back}`,
+    );
+    try {
+      const parsed = safeParseModelJson(text);
+      return z.object({ front: z.string(), back: z.string() }).parse(parsed);
+    } catch {
+      throw new Error("The AI response could not be read. Please try again.");
+    }
+  });
+
+// ---------- Related topics ----------
+const RelatedInput = z.object({ topic: z.string().min(1).max(2000) });
+export const relatedTopics = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => RelatedInput.parse(d))
+  .handler(async ({ data }) => {
+    const aiModel = resolveAiModel();
+    if (!aiModel) throw new Error(NO_AI);
+    const text = await runText(
+      aiModel,
+      `Suggest 6 concise related study topics someone learning about "${data.topic}" should explore next. Return ONLY a JSON array of short topic strings.`,
+    );
+    try {
+      const parsed = safeParseModelJson(text);
+      return { topics: z.array(z.string()).parse(parsed).slice(0, 6) };
+    } catch {
+      return { topics: [] as string[] };
+    }
+  });

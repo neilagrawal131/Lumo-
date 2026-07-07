@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, LayoutGrid } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { ArrowLeft, Loader2, LayoutGrid, Compass, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { relatedTopics } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
 import { ModePicker } from "@/components/study/ModePicker";
 import { FlashcardMode } from "@/components/study/FlashcardMode";
@@ -101,6 +103,7 @@ function StudyHub() {
           <p className="mt-1 text-muted-foreground">Pick how you want to study — switch anytime, no need to recreate the set.</p>
         </div>
         <ModePicker usableCount={usableCount} onPick={goMode} />
+        <RelatedTopics title={title} />
       </div>
     );
   }
@@ -179,6 +182,45 @@ function StudyHub() {
       </div>
 
       <p className="sr-only">{meta.description}</p>
+    </div>
+  );
+}
+
+function RelatedTopics({ title }: { title: string }) {
+  const gen = useServerFn(relatedTopics);
+  const { data, isLoading } = useQuery({
+    queryKey: ["related-topics", title],
+    staleTime: 1000 * 60 * 30,
+    queryFn: async () => gen({ data: { topic: title } }),
+  });
+  const topics = data?.topics ?? [];
+
+  if (isLoading) {
+    return (
+      <div className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> Finding related topics…
+      </div>
+    );
+  }
+  if (topics.length === 0) return null;
+
+  return (
+    <div className="mt-8">
+      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <Compass className="h-4 w-4" /> Related topics to explore
+      </h2>
+      <div className="flex flex-wrap gap-2">
+        {topics.map((t) => (
+          <Link
+            key={t}
+            to="/flashcards"
+            search={{ topic: t }}
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium transition-colors hover:border-primary/40 hover:text-primary"
+          >
+            {t} <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }
