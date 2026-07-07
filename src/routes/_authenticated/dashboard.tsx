@@ -207,11 +207,17 @@ function Dashboard() {
       {/* Recent + recommendations */}
       <div className="grid gap-6 lg:grid-cols-2">
         <RecentList
-          title="Recent flashcard sets"
+          title="Recent study sets"
           icon={Layers}
           empty="No sets yet — create your first!"
-          emptyTo="/flashcards"
-          items={(sets ?? []).map((s) => ({ id: s.id, title: s.title, sub: s.difficulty, to: "/flashcards" as const }))}
+          emptyTo="/sets"
+          items={(sets ?? []).map((s) => ({
+            id: s.id,
+            title: s.title,
+            sub: s.difficulty,
+            to: "/study/$setId",
+            params: { setId: s.id },
+          }))}
         />
         <RecentList
           title="Recent quizzes"
@@ -291,21 +297,21 @@ function RecentList({
 }: {
   title: string;
   icon: React.ElementType;
-  items: { id: string; title: string; sub: string; to: "/flashcards" | "/quizzes" }[];
+  items: { id: string; title: string; sub: string; to: string; params?: Record<string, string> }[];
   empty: string;
-  emptyTo: "/flashcards" | "/quizzes";
+  emptyTo: string;
 }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
       <h2 className="flex items-center gap-2 font-semibold"><Icon className="h-5 w-5 text-primary" /> {title}</h2>
       <div className="mt-4 space-y-2">
         {items.length === 0 ? (
-          <Link to={emptyTo} className="block rounded-xl border border-dashed border-border p-4 text-center text-sm text-muted-foreground hover:border-primary/40">
+          <Link to={emptyTo as never} className="block rounded-xl border border-dashed border-border p-4 text-center text-sm text-muted-foreground hover:border-primary/40">
             {empty}
           </Link>
         ) : (
           items.map((it) => (
-            <Link key={it.id} to={it.to} className="flex items-center justify-between rounded-xl border border-border p-3 transition-colors hover:border-primary/40 hover:bg-muted">
+            <Link key={it.id} to={it.to as never} params={it.params as never} className="flex items-center justify-between rounded-xl border border-border p-3 transition-colors hover:border-primary/40 hover:bg-muted">
               <span className="truncate text-sm font-medium">{it.title}</span>
               <span className="ml-2 shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs capitalize text-muted-foreground">{it.sub}</span>
             </Link>
