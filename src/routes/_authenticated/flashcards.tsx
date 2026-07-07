@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Layers, Loader2, Sparkles, Trash2, FileUp, PenLine, Pencil, Globe, Folder, ImagePlus } from "lucide-react";
 import { generateFlashcards, generateSetFromImage } from "@/lib/ai.functions";
+import { extractTextFromFile } from "@/lib/extract-text";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -66,6 +67,7 @@ function FlashcardsPage() {
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [loading, setLoading] = useState(false);
   const [imgLoading, setImgLoading] = useState(false);
+  const [fileLoading, setFileLoading] = useState(false);
   const [folderFilter, setFolderFilter] = useState<string>("all");
 
   const { data: folders } = useQuery({
@@ -91,13 +93,21 @@ function FlashcardsPage() {
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    if (file.type.startsWith("text") || file.name.endsWith(".txt") || file.name.endsWith(".md")) {
-      const text = await file.text();
-      setTopic((t) => (t ? t + "\n\n" : "") + text.slice(0, 4000));
-      toast.success("Notes added from file");
-    } else {
-      toast.error("Please upload a .txt or .md file, or paste your notes.");
+    setFileLoading(true);
+    try {
+      const text = await extractTextFromFile(file);
+      if (!text.trim()) {
+        toast.error("Couldn't find text in that file. Try the image upload or paste your notes.");
+        return;
+      }
+      setTopic((t) => ((t ? t + "\n\n" : "") + text).slice(0, 4000));
+      toast.success(`Loaded notes from ${file.name}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't read that file");
+    } finally {
+      setFileLoading(false);
     }
   }
 
@@ -232,9 +242,10 @@ function FlashcardsPage() {
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               {loading ? "Generating…" : "Generate flashcards"}
             </Button>
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-input px-4 py-2.5 text-sm font-medium hover:bg-muted">
-              <FileUp className="h-4 w-4" /> Upload notes (.txt)
-              <input type="file" accept=".txt,.md,text/plain" className="hidden" onChange={handleFile} />
+            <label className={`inline-flex items-center gap-2 rounded-xl border border-input px-4 py-2.5 text-sm font-medium hover:bg-muted ${fileLoading ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
+              {fileLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
+              {fileLoading ? "Reading…" : "Upload PDF / Word / PPT / notes"}
+              <input type="file" accept=".pdf,.docx,.pptx,.txt,.md,text/plain" className="hidden" onChange={handleFile} disabled={fileLoading} />
             </label>
             <label className={`inline-flex items-center gap-2 rounded-xl border border-input px-4 py-2.5 text-sm font-medium hover:bg-muted ${imgLoading ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
               {imgLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
