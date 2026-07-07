@@ -98,6 +98,17 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
       throw new Error('Unauthorized: No user ID found in token');
     }
 
+    // Block suspended accounts at the API layer. If the `suspended` column
+    // doesn't exist yet, the query errors and we fail open (treat as active).
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('suspended')
+      .eq('id', data.claims.sub)
+      .maybeSingle();
+    if (prof && (prof as { suspended?: boolean }).suspended) {
+      throw new Error('Your account has been suspended. Contact support if you think this is a mistake.');
+    }
+
     return next({
       context: {
         supabase,
