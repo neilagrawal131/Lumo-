@@ -8,6 +8,7 @@ import {
   ClipboardList,
   BookOpen,
   Trophy,
+  Users,
   Crown,
   Shield,
   Flame,
@@ -30,6 +31,7 @@ const nav = [
   { to: "/quizzes", label: "Quizzes", icon: ClipboardList },
   { to: "/study-guide", label: "Study Guide", icon: BookOpen },
   { to: "/progress", label: "Progress", icon: Trophy },
+  { to: "/friends", label: "Friends", icon: Users },
   { to: "/pricing", label: "Premium", icon: Crown },
 ] as const;
 

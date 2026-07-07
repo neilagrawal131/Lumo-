@@ -5,13 +5,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowLeft, Loader2, Plus, Trash2, Copy, ArrowUp, ArrowDown, ImagePlus, X,
-  Check, Cloud, Globe, Lock, Share2, Sparkles, BookOpen, Wand2,
+  Check, Cloud, Globe, Lock, Share2, Sparkles, BookOpen, Wand2, Users,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { uploadFlashcardImage } from "@/lib/flashcard-images";
 import { generateQuiz, generateFlashcards, rewriteCard } from "@/lib/ai.functions";
+import { socialOverview, listSetShares, shareSet, unshareSet } from "@/lib/friends.functions";
 import { awardBadge } from "@/lib/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,32 @@ function EditorPage() {
   const rewrite = useServerFn(rewriteCard);
   const [rewritingId, setRewritingId] = useState<string | null>(null);
   const [addingCards, setAddingCards] = useState(false);
+
+  const social = useServerFn(socialOverview);
+  const listShares = useServerFn(listSetShares);
+  const doShare = useServerFn(shareSet);
+  const doUnshare = useServerFn(unshareSet);
+  const [sharingId, setSharingId] = useState<string | null>(null);
+  const { data: friendsData } = useQuery({ queryKey: ["social"], queryFn: async () => social({}) });
+  const { data: sharesData, refetch: refetchShares } = useQuery({
+    queryKey: ["set-shares", setId],
+    queryFn: async () => listShares({ data: { setId } }),
+  });
+  const sharedWith = new Set(sharesData?.sharedWith ?? []);
+
+  async function toggleShare(friendUserId: string, currentlyShared: boolean) {
+    setSharingId(friendUserId);
+    try {
+      if (currentlyShared) await doUnshare({ data: { setId, friendUserId } });
+      else await doShare({ data: { setId, friendUserId } });
+      await refetchShares();
+      toast.success(currentlyShared ? "Unshared" : "Shared with your friend");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't update sharing");
+    } finally {
+      setSharingId(null);
+    }
+  }
 
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
@@ -320,6 +347,32 @@ function EditorPage() {
           </Button>
         )}
       </div>
+
+      {/* Share with friends */}
+      {(friendsData?.friends?.length ?? 0) > 0 && (
+        <div className="space-y-3 rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <h2 className="flex items-center gap-2 font-semibold"><Users className="h-5 w-5 text-primary" /> Share with friends</h2>
+          <div className="space-y-2">
+            {friendsData!.friends.map((f: { id: string; name: string | null; email: string | null }) => {
+              const isShared = sharedWith.has(f.id);
+              return (
+                <div key={f.id} className="flex items-center justify-between rounded-xl border border-border p-3">
+                  <span className="truncate text-sm font-medium">{f.name ?? f.email ?? "Friend"}</span>
+                  <Button
+                    size="sm"
+                    variant={isShared ? "soft" : "outline"}
+                    disabled={sharingId === f.id}
+                    onClick={() => toggleShare(f.id, isShared)}
+                  >
+                    {sharingId === f.id ? <Loader2 className="h-4 w-4 animate-spin" /> : isShared ? <><Check className="h-4 w-4" /> Shared</> : "Share"}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground">Friends you share with can study this set (they can't edit it).</p>
+        </div>
+      )}
 
       {/* Cards */}
       <div className="space-y-4">

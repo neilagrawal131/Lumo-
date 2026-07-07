@@ -24,6 +24,7 @@ import { Route as AuthenticatedCreateRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
 import { Route as AuthenticatedSetsRouteImport } from './routes/_authenticated/sets'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedFriendsRouteImport } from './routes/_authenticated/friends'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedStudySetIdRouteImport } from './routes/_authenticated/study.$setId'
 import { Route as AuthenticatedEditorSetIdRouteImport } from './routes/_authenticated/editor.$setId'
@@ -100,6 +101,11 @@ const AuthenticatedSetsRoute = AuthenticatedSetsRouteImport.update({
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFriendsRoute = AuthenticatedFriendsRouteImport.update({
+  id: '/friends',
+  path: '/friends',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
@@ -307,6 +313,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedSetsRoute: typeof AuthenticatedSetsRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedFriendsRoute: typeof AuthenticatedFriendsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFlashcardsRoute: typeof AuthenticatedFlashcardsRoute
   AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
@@ -322,6 +329,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedSetsRoute: AuthenticatedSetsRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedFriendsRoute: AuthenticatedFriendsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFlashcardsRoute: AuthenticatedFlashcardsRoute,
   AuthenticatedProgressRoute: AuthenticatedProgressRoute,
