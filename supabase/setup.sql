@@ -32,6 +32,14 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users manage own profile" ON public.profiles;
 CREATE POLICY "Users manage own profile" ON public.profiles FOR ALL USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
+-- Premium / subscription fields
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS plan text NOT NULL DEFAULT 'free',
+  ADD COLUMN IF NOT EXISTS stripe_customer_id text,
+  ADD COLUMN IF NOT EXISTS stripe_subscription_id text,
+  ADD COLUMN IF NOT EXISTS subscription_status text,
+  ADD COLUMN IF NOT EXISTS plan_renews_at timestamptz;
+
 -- FLASHCARD SETS -------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.flashcard_sets (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,

@@ -13,6 +13,9 @@ export type Profile = {
   current_streak: number;
   longest_streak: number;
   last_study_date: string | null;
+  plan: string | null;
+  subscription_status: string | null;
+  plan_renews_at: string | null;
 };
 
 export function useProfile() {
@@ -23,7 +26,9 @@ export function useProfile() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, display_name, age_group, xp, level, current_streak, longest_streak, last_study_date")
+        // select("*") so the app keeps working even before the premium columns
+        // (plan, subscription_status, …) have been added to the database.
+        .select("*")
         .eq("id", user!.id)
         .single();
       if (error) throw error;
