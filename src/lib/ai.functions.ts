@@ -22,8 +22,9 @@ function safeParseModelJson(text: string): unknown {
   return JSON.parse(slice);
 }
 
-// Surfaces the provider's raw error detail. The AI SDK wraps failures in a
-// RetryError; the real provider error is nested in lastError/errors.
+// Logs the provider's raw error detail to the server (never to the user), then
+// throws a short, friendly message. The AI SDK wraps failures in a RetryError;
+// the real provider error is nested in lastError/errors.
 function aiError(e: unknown): never {
   const top = e as { lastError?: unknown; errors?: unknown[]; statusCode?: number };
   const inner = (top.lastError ??
@@ -32,7 +33,23 @@ function aiError(e: unknown): never {
   const status = inner.statusCode ?? top.statusCode;
   const raw = inner.responseBody ?? inner.data ?? inner.message ?? String(inner);
   const detail = (typeof raw === "string" ? raw : JSON.stringify(raw)).replace(/\s+/g, " ").slice(0, 600);
-  throw new Error(`AI failed${status ? ` [${status}]` : ""}: ${detail}`);
+
+  // Server-side only — visible in Vercel logs for debugging, never sent to the client.
+  console.error(`[AI] request failed${status ? ` [${status}]` : ""}: ${detail}`);
+
+  if (status === 429 || /rate.?limit|quota|too many requests/i.test(detail)) {
+    throw new Error("The AI is busy right now. Please wait a minute and try again.");
+  }
+  if (status === 401 || status === 403) {
+    throw new Error("The AI service key looks invalid. Please check the API key configuration.");
+  }
+  if (status === 402 || /insufficient|billing|payment/i.test(detail)) {
+    throw new Error("The AI service needs billing set up. Please check your provider account.");
+  }
+  if (status && status >= 500) {
+    throw new Error("The AI service is temporarily unavailable. Please try again in a moment.");
+  }
+  throw new Error("The AI couldn't complete that request. Please try again.");
 }
 
 async function runText(model: LanguageModel, prompt: string): Promise<string> {

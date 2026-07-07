@@ -11,9 +11,17 @@ type AuthCtx = {
   claims: Record<string, unknown>;
 };
 
+// Subscription columns are locked down (users can't write them), so the billing
+// functions write them with the service role after verifying the caller.
+async function adminDb() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin;
+}
+
 async function getOrCreateCustomer(ctx: AuthCtx): Promise<string> {
-  const { supabase, userId, claims } = ctx;
-  const { data: profile } = await supabase
+  const { userId, claims } = ctx;
+  const db = await adminDb();
+  const { data: profile } = await db
     .from("profiles")
     .select("stripe_customer_id, display_name")
     .eq("id", userId)
@@ -27,7 +35,7 @@ async function getOrCreateCustomer(ctx: AuthCtx): Promise<string> {
     "metadata[user_id]": userId,
   });
 
-  await supabase.from("profiles").update({ stripe_customer_id: customer.id }).eq("id", userId);
+  await db.from("profiles").update({ stripe_customer_id: customer.id }).eq("id", userId);
   return customer.id;
 }
 
@@ -119,7 +127,8 @@ export const syncSubscription = createServerFn({ method: "POST" })
       interval = active.items?.data?.[0]?.price?.recurring?.interval ?? null;
     }
 
-    await supabase
+    const db = await adminDb();
+    await db
       .from("profiles")
       .update({
         plan,
