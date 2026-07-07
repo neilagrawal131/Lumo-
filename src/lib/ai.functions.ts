@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateText, Output, NoObjectGeneratedError } from "ai";
+import { generateText, Output, NoObjectGeneratedError, type LanguageModel } from "ai";
 import { z } from "zod";
 import { resolveAiModel } from "./ai-gateway.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -20,6 +20,20 @@ function safeParseModelJson(text: string): unknown {
   const end = Math.max(raw.lastIndexOf("]"), raw.lastIndexOf("}"));
   const slice = start >= 0 && end > start ? raw.slice(start, end + 1) : raw;
   return JSON.parse(slice);
+}
+
+// Run a text generation with a friendly message for rate limits (free-tier 429s).
+async function runText(model: LanguageModel, prompt: string): Promise<string> {
+  try {
+    const { text } = await generateText({ model, prompt, maxRetries: 1 });
+    return text;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/too many requests|rate limit|429|resource exhausted|quota/i.test(msg)) {
+      throw new Error("The AI is busy right now (free-tier rate limit). Please wait a minute and try again.");
+    }
+    throw e;
+  }
 }
 
 // ---------- Flashcards ----------
@@ -45,7 +59,7 @@ Return ONLY a JSON array like: [{"front":"...","back":"..."}]. No commentary.
 TOPIC / NOTES:
 ${data.topic}`;
 
-    const { text } = await generateText({ model: aiModel, prompt });
+    const text = await runText(aiModel, prompt);
     let parsed: unknown;
     try {
       parsed = safeParseModelJson(text);
@@ -90,7 +104,7 @@ Return ONLY a JSON array of question objects. No commentary.
 TOPIC / NOTES:
 ${data.topic}`;
 
-    const { text } = await generateText({ model: aiModel, prompt });
+    const text = await runText(aiModel, prompt);
     let parsed: unknown;
     try {
       parsed = safeParseModelJson(text);
@@ -125,7 +139,7 @@ export const generateStudyGuide = createServerFn({ method: "POST" })
     if (!aiModel) throw new Error(NO_AI);
     const prompt = `Write a concise study guide about "${data.topic}" for a ${data.ageGroup} learner. ${ageStyle[data.ageGroup]}
 Return JSON: {"summary":"2-3 sentence overview","keyConcepts":["..."],"vocabulary":[{"term":"","definition":""}],"practiceQuestions":["..."]}. Return ONLY JSON.`;
-    const { text } = await generateText({ model: aiModel, prompt });
+    const text = await runText(aiModel, prompt);
     try {
       const parsed = safeParseModelJson(text);
       return z
@@ -154,9 +168,9 @@ export const explainAnswer = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const aiModel = resolveAiModel();
     if (!aiModel) throw new Error(NO_AI);
-    const { text } = await generateText({
-      model: aiModel,
-      prompt: `Question: ${data.question}\nCorrect answer: ${data.correct}\nLearner's answer: ${data.chosen}\nIn 2-3 friendly sentences, explain why the correct answer is right and gently clarify the mistake.`,
-    });
+    const text = await runText(
+      aiModel,
+      `Question: ${data.question}\nCorrect answer: ${data.correct}\nLearner's answer: ${data.chosen}\nIn 2-3 friendly sentences, explain why the correct answer is right and gently clarify the mistake.`,
+    );
     return { explanation: text.trim() };
   });
