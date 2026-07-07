@@ -29,10 +29,16 @@ async function runText(model: LanguageModel, prompt: string): Promise<string> {
     const { text } = await generateText({ model, prompt, maxRetries: 1 });
     return text;
   } catch (e) {
-    const err = e as { statusCode?: number; responseBody?: string; message?: string };
-    const detail = (err.responseBody || err.message || String(e)).replace(/\s+/g, " ").slice(0, 500);
-    const status = err.statusCode ? `HTTP ${err.statusCode}: ` : "";
-    throw new Error(`AI request failed. ${status}${detail}`);
+    // The AI SDK wraps failures in a RetryError; the real provider error (with
+    // Google's quota message) is nested in lastError/errors.
+    const top = e as { lastError?: unknown; errors?: unknown[]; statusCode?: number };
+    const inner = (top.lastError ??
+      (Array.isArray(top.errors) ? top.errors[top.errors.length - 1] : undefined) ??
+      top) as { statusCode?: number; responseBody?: string; data?: unknown; message?: string };
+    const status = inner.statusCode ?? top.statusCode;
+    const raw = inner.responseBody ?? inner.data ?? inner.message ?? String(inner);
+    const detail = (typeof raw === "string" ? raw : JSON.stringify(raw)).replace(/\s+/g, " ").slice(0, 600);
+    throw new Error(`AI failed${status ? ` [${status}]` : ""}: ${detail}`);
   }
 }
 
