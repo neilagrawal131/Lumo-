@@ -4,7 +4,7 @@ import { z } from "zod";
 import { resolveAiModel } from "./ai-gateway.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const NO_AI = "AI is not configured yet. Add a GEMINI_API_KEY (or OPENAI_API_KEY / ANTHROPIC_API_KEY) in Vercel, then redeploy.";
+const NO_AI = "AI is not configured yet. Add a GROQ_API_KEY (free) — or GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY — in Vercel, then redeploy.";
 
 const ageStyle: Record<string, string> = {
   kids: "Use very simple words a young child understands, short sentences, and a friendly, playful tone. Keep facts concrete.",
