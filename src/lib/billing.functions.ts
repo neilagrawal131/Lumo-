@@ -38,7 +38,11 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
     z.object({ interval: z.enum(["monthly", "yearly"]), origin: z.string().url() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    const price = data.interval === "yearly" ? process.env.STRIPE_PRICE_YEARLY : process.env.STRIPE_PRICE_MONTHLY;
+    // Price IDs default to the (non-secret) sandbox prices; override via env for live mode.
+    const price =
+      data.interval === "yearly"
+        ? process.env.STRIPE_PRICE_YEARLY || "price_1Tqax5FHfxTJm8H2QhMKw48y"
+        : process.env.STRIPE_PRICE_MONTHLY || "price_1TqawXFHfxTJm8H2PtLki1Vg";
     if (!price) throw new Error("Billing isn't set up yet. Please try again later.");
 
     const customer = await getOrCreateCustomer(context as unknown as AuthCtx);
