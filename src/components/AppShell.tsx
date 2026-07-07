@@ -9,6 +9,7 @@ import {
   BookOpen,
   Trophy,
   Crown,
+  Shield,
   Flame,
   LogOut,
   Menu,
@@ -19,6 +20,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
+import { useRole } from "@/hooks/useRole";
 import { levelProgress, xpIntoLevel, XP_PER_LEVEL } from "@/lib/gamification";
 
 const nav = [
@@ -33,10 +35,12 @@ const nav = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { data: profile } = useProfile();
+  const { data: role } = useRole();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
+  const navItems = role === "admin" ? [...nav, { to: "/admin", label: "Admin", icon: Shield } as const] : nav;
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -47,7 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const NavLinks = () => (
     <nav className="flex flex-col gap-1">
-      {nav.map((item) => {
+      {navItems.map((item) => {
         const active = pathname.startsWith(item.to);
         return (
           <Link

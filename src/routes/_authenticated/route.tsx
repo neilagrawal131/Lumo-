@@ -7,6 +7,12 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
+    // Block suspended accounts. select("*") so this is safe before the column exists.
+    const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).maybeSingle();
+    if (profile && (profile as { suspended?: boolean }).suspended) {
+      await supabase.auth.signOut();
+      throw redirect({ to: "/auth", search: { mode: "login" } });
+    }
     return { user: data.user };
   },
   component: () => (
