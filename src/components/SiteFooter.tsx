@@ -42,7 +42,11 @@ export function SiteFooter() {
         </div>
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-border/60 pt-6 text-sm text-muted-foreground md:flex-row">
           <p>© {new Date().getFullYear()} Etude. All rights reserved.</p>
-          <p>Made for curious minds ✨</p>
+          <div className="flex items-center gap-4">
+            <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
+            <Link to="/terms" className="hover:text-foreground">Terms</Link>
+            <span className="hidden md:inline">Made for curious minds ✨</span>
+          </div>
         </div>
       </div>
     </footer>

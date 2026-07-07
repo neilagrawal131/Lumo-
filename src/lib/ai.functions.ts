@@ -52,6 +52,25 @@ function aiError(e: unknown): never {
   throw new Error("The AI couldn't complete that request. Please try again.");
 }
 
+// Per-user daily AI rate limit, enforced in the database (see supabase/rate-limit.sql).
+// Uses the caller's authenticated Supabase client so the DB knows who they are.
+// Fails OPEN if the SQL hasn't been run yet (function missing) — never blocks a
+// real request over infra state — but enforces the cap once it exists.
+async function enforceAiQuota(context: unknown, cost = 1): Promise<void> {
+  const ctx = context as {
+    supabase?: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ error: { message?: string; code?: string } | null }> };
+  };
+  if (!ctx?.supabase?.rpc) return;
+  const { error } = await ctx.supabase.rpc("consume_ai_quota", { p_cost: cost });
+  if (!error) return;
+  // The limit was hit — surface the friendly message from the DB to the user.
+  if (error.code === "check_violation" || /daily limit reached/i.test(error.message ?? "")) {
+    throw new Error(error.message || "You've reached today's AI limit. Please try again tomorrow.");
+  }
+  // Any other error (e.g. function not created yet) → log and allow the request.
+  console.error("[AI quota] check skipped:", error.message);
+}
+
 async function runText(model: LanguageModel, prompt: string): Promise<string> {
   try {
     const { text } = await generateText({ model, prompt, maxRetries: 1 });
@@ -72,9 +91,10 @@ const FlashcardInput = z.object({
 export const generateFlashcards = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => FlashcardInput.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const aiModel = resolveAiModel();
     if (!aiModel) throw new Error(NO_AI);
+    await enforceAiQuota(context);
 
     const prompt = `Create ${data.count} high-quality study flashcards about the following topic or notes.
 Difficulty: ${data.difficulty}. Audience: ${data.ageGroup}. ${ageStyle[data.ageGroup]}
@@ -116,9 +136,10 @@ export type QuizQuestion = {
 export const generateQuiz = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => QuizInput.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const aiModel = resolveAiModel();
     if (!aiModel) throw new Error(NO_AI);
+    await enforceAiQuota(context);
 
     const prompt = `Create a quiz of ${data.count} questions about the topic or notes below.
 Difficulty: ${data.difficulty}. Audience: ${data.ageGroup}. ${ageStyle[data.ageGroup]}
@@ -159,9 +180,10 @@ const SummaryInput = z.object({
 export const generateStudyGuide = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => SummaryInput.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const aiModel = resolveAiModel();
     if (!aiModel) throw new Error(NO_AI);
+    await enforceAiQuota(context);
     const prompt = `Write a concise study guide about "${data.topic}" for a ${data.ageGroup} learner. ${ageStyle[data.ageGroup]}
 Return JSON: {"summary":"2-3 sentence overview","keyConcepts":["..."],"vocabulary":[{"term":"","definition":""}],"practiceQuestions":["..."]}. Return ONLY JSON.`;
     const text = await runText(aiModel, prompt);
@@ -190,9 +212,10 @@ const ExplainInput = z.object({
 export const explainAnswer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => ExplainInput.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const aiModel = resolveAiModel();
     if (!aiModel) throw new Error(NO_AI);
+    await enforceAiQuota(context);
     const text = await runText(
       aiModel,
       `Question: ${data.question}\nCorrect answer: ${data.correct}\nLearner's answer: ${data.chosen}\nIn 2-3 friendly sentences, explain why the correct answer is right and gently clarify the mistake.`,
@@ -208,9 +231,10 @@ const HintInput = z.object({
 export const getHint = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => HintInput.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const aiModel = resolveAiModel();
     if (!aiModel) throw new Error(NO_AI);
+    await enforceAiQuota(context);
     const text = await runText(
       aiModel,
       `Give ONE short hint (max 1 sentence) that nudges the learner toward the answer WITHOUT revealing it. Do not state or spell the answer.
@@ -229,9 +253,10 @@ const RewriteInput = z.object({
 export const rewriteCard = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => RewriteInput.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const aiModel = resolveAiModel();
     if (!aiModel) throw new Error(NO_AI);
+    await enforceAiQuota(context);
     const goal =
       data.direction === "easier"
         ? "Make it simpler and easier to understand — plainer wording, a clearer or more basic version of the same concept."
@@ -261,9 +286,10 @@ const ImageSetInput = z.object({
 export const generateSetFromImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => ImageSetInput.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const model = resolveVisionModel();
     if (!model) throw new Error(NO_AI);
+    await enforceAiQuota(context, 2); // vision is pricier — counts double
     const prompt = `Look at this image — it may be class notes, a textbook page, a diagram, a slide, or a photo. Read and understand its content, then create ${data.count} study flashcards from it.
 Difficulty: ${data.difficulty}. Audience: ${data.ageGroup}. ${ageStyle[data.ageGroup]}
 Each flashcard has a "front" (a concise question or term) and a "back" (a clear, correct answer).
