@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Layers, Trash2, Pencil, Globe, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ShareSetDialog } from "@/components/ShareSetDialog";
 
 export type StudySetSummary = {
   id: string;
@@ -45,6 +46,7 @@ export function StudySetCard({ set, onDelete }: { set: StudySetSummary; onDelete
             <GraduationCap className="h-4 w-4" /> Study
           </Link>
         </Button>
+        <ShareSetDialog setId={set.id} setTitle={set.title} />
         <Button asChild variant="outline" size="icon" aria-label="Edit">
           <Link to="/editor/$setId" params={{ setId: set.id }}>
             <Pencil className="h-4 w-4" />
