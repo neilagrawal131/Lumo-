@@ -112,9 +112,20 @@ function PricingPage() {
         </div>
       </div>
 
-      <p className="text-center text-xs text-muted-foreground">
-        Secure checkout by Stripe. Cancel anytime from your billing page. You won't be charged until the trial ends.
-      </p>
+      <div className="space-y-2 text-center text-xs text-muted-foreground">
+        <p>
+          After your 7-day free trial, Premium automatically continues at{" "}
+          <span className="font-medium text-foreground">{price.amount}{price.per}</span> and renews
+          automatically each {interval === "monthly" ? "month" : "year"} until you cancel. Cancel
+          anytime from your billing page before the trial ends and you won't be charged. Secure
+          checkout by Stripe.
+        </p>
+        <p>
+          By starting your trial, you agree to our{" "}
+          <Link to="/terms" className="underline hover:text-foreground">Terms of Service</Link> and{" "}
+          <Link to="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>.
+        </p>
+      </div>
     </div>
   );
 }
