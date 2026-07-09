@@ -77,6 +77,9 @@ function processSupportInbox() {
       var body = reply.trim() + "\n\n" + SIGNATURE;
       if (AUTO_SEND) { thread.reply(body); } else { thread.createDraftReply(body); }
       thread.addLabel(label);
+
+      // Space out requests to stay under the AI provider's per-minute limit.
+      Utilities.sleep(1500);
     } catch (err) {
       console.error("Thread failed: " + err);
     }
@@ -99,26 +102,47 @@ function generateReply_(subject, customerMessage) {
     ],
   };
 
-  var res = UrlFetchApp.fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "post",
-    contentType: "application/json",
-    headers: { Authorization: "Bearer " + GROQ_API_KEY },
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true,
-  });
+  // Retry on rate-limit (HTTP 429): wait the suggested time and try again.
+  for (var attempt = 0; attempt < 4; attempt++) {
+    var res = UrlFetchApp.fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "post",
+      contentType: "application/json",
+      headers: { Authorization: "Bearer " + GROQ_API_KEY },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true,
+    });
 
-  if (res.getResponseCode() < 200 || res.getResponseCode() >= 300) {
-    console.error("Groq error " + res.getResponseCode() + ": " + res.getContentText());
-    return null;
+    var code = res.getResponseCode();
+    var text = res.getContentText();
+
+    if (code === 429) {
+      var waitSec = parseRetryAfter_(text);
+      console.log("Rate limited — waiting " + waitSec + "s then retrying.");
+      Utilities.sleep(Math.min(waitSec * 1000 + 500, 25000));
+      continue;
+    }
+    if (code < 200 || code >= 300) {
+      console.error("Groq error " + code + ": " + text);
+      return null;
+    }
+    try {
+      var data = JSON.parse(text);
+      var content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+      return content ? String(content) : null;
+    } catch (e) {
+      console.error("Parse error: " + e);
+      return null;
+    }
   }
-  try {
-    var data = JSON.parse(res.getContentText());
-    var content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-    return content ? String(content) : null;
-  } catch (e) {
-    console.error("Parse error: " + e);
-    return null;
-  }
+
+  console.error("Groq: still rate limited after retries — will try this email next run.");
+  return null;
+}
+
+// Pull the "try again in X.Xs" hint out of a Groq 429 body; default to 8s.
+function parseRetryAfter_(body) {
+  var m = /try again in ([\d.]+)s/.exec(body || "");
+  return m ? Math.ceil(parseFloat(m[1])) : 8;
 }
 
 function isAutomated_(from) {
