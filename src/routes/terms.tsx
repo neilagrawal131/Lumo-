@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage } from "@/components/LegalPage";
+import { SUPPORT_EMAIL } from "@/lib/support";
 
 export const Route = createFileRoute("/terms")({
   component: TermsPage,
@@ -97,7 +98,8 @@ function TermsPage() {
 
       <h2>11. Contact</h2>
       <p>
-        Questions about these Terms? Contact us at <a href="mailto:hello@lumo.study">hello@lumo.study</a>.
+        Questions about these Terms? Contact us at{" "}
+        <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
       </p>
     </LegalPage>
   );

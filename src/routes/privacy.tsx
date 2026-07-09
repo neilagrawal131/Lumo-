@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage } from "@/components/LegalPage";
+import { SUPPORT_EMAIL } from "@/lib/support";
 
 export const Route = createFileRoute("/privacy")({
   component: PrivacyPage,
@@ -102,7 +103,7 @@ function PrivacyPage() {
       <h2>10. Contact</h2>
       <p>
         Questions or requests about your privacy? Contact us at{" "}
-        <a href="mailto:hello@lumo.study">hello@lumo.study</a>.
+        <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
       </p>
     </LegalPage>
   );
