@@ -62,10 +62,17 @@ function processSupportInbox() {
     try {
       var messages = thread.getMessages();
       var last = messages[messages.length - 1];
-      var from = String(last.getFrom() || "").toLowerCase();
 
-      if (me && from.indexOf(me) !== -1) { thread.addLabel(label); continue; }
-      if (isAutomated_(from)) { thread.addLabel(label); continue; }
+      // Figure out who actually wrote in. Contact-form emails (e.g. Web3Forms)
+      // arrive from a system address with the real customer in the Reply-To,
+      // so prefer Reply-To and fall back to From.
+      var replyToEmail = extractEmail_(last.getReplyTo());
+      var fromEmail = extractEmail_(last.getFrom());
+      var customer = replyToEmail || fromEmail;
+
+      if (!customer) { thread.addLabel(label); continue; }
+      if (me && customer.toLowerCase().indexOf(me) !== -1) { thread.addLabel(label); continue; }
+      if (isAutomated_(customer.toLowerCase())) { thread.addLabel(label); continue; }
 
       var subject = last.getSubject() || "(no subject)";
       var customerMessage = String(last.getPlainBody() || "").slice(0, 4000);
@@ -75,7 +82,18 @@ function processSupportInbox() {
       if (!reply) continue;
 
       var body = reply.trim() + "\n\n" + SIGNATURE;
-      if (AUTO_SEND) { thread.reply(body); } else { thread.createDraftReply(body); }
+      // A "wrapped" email (form submission) came from a different address than
+      // the customer, so we draft a fresh message to the customer instead of
+      // replying in-thread (which would go back to the form service).
+      var wrapped = replyToEmail && replyToEmail.toLowerCase() !== fromEmail.toLowerCase();
+
+      if (AUTO_SEND) {
+        if (wrapped) GmailApp.sendEmail(customer, "Re: " + stripRe_(subject), body);
+        else thread.reply(body);
+      } else {
+        if (wrapped) GmailApp.createDraft(customer, "Re: " + stripRe_(subject), body);
+        else thread.createDraftReply(body);
+      }
       thread.addLabel(label);
 
       // Space out requests to stay under the AI provider's per-minute limit.
@@ -147,6 +165,19 @@ function parseRetryAfter_(body) {
 
 function isAutomated_(from) {
   return /no-?reply|do-?not-?reply|mailer-daemon|postmaster|notifications?@|automated|bounce/.test(from);
+}
+
+// Pull a bare email address out of "Name <a@b.com>" or "a@b.com".
+function extractEmail_(s) {
+  if (!s) return "";
+  var m = /<([^>]+)>/.exec(s);
+  var e = (m ? m[1] : s).trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : "";
+}
+
+// Drop a leading "Re:" so we don't end up with "Re: Re: ...".
+function stripRe_(s) {
+  return String(s || "").replace(/^\s*re:\s*/i, "");
 }
 
 function getOrCreateLabel_(name) {
