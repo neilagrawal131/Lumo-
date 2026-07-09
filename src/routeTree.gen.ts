@@ -17,6 +17,7 @@ import { Route as OauthCallbackRouteImport } from './routes/oauth.callback'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as HelpRouteImport } from './routes/help'
 import { Route as AuthenticatedStudyGuideRouteImport } from './routes/_authenticated/study-guide'
 import { Route as AuthenticatedQuizzesRouteImport } from './routes/_authenticated/quizzes'
 import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated/progress'
@@ -68,6 +69,11 @@ const TermsRoute = TermsRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedStudyGuideRoute = AuthenticatedStudyGuideRouteImport.update({
@@ -230,6 +236,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
   PrivacyRoute: typeof PrivacyRoute
+  HelpRoute: typeof HelpRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -365,6 +372,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
   PrivacyRoute: PrivacyRoute,
+  HelpRoute: HelpRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

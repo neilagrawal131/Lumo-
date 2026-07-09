@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Logo } from "./Logo";
 import { Mail } from "lucide-react";
+import { SUPPORT_EMAIL } from "@/lib/support";
 
 export function SiteFooter() {
   return (
@@ -28,14 +29,17 @@ export function SiteFooter() {
               <li><a href="#features" className="hover:text-foreground">Flashcards</a></li>
               <li><a href="#features" className="hover:text-foreground">Quizzes</a></li>
               <li><a href="#features" className="hover:text-foreground">Study guides</a></li>
-              <li><a href="#faq" className="hover:text-foreground">FAQ</a></li>
+              <li><Link to="/help" className="hover:text-foreground">Help &amp; FAQ</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className="text-sm font-semibold">Contact</h4>
+            <h4 className="text-sm font-semibold">Support</h4>
             <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-center gap-2">
-                <Mail className="h-4 w-4" /> hello@lumo.study
+              <li><Link to="/help" className="hover:text-foreground">Help center</Link></li>
+              <li>
+                <a href={`mailto:${SUPPORT_EMAIL}`} className="flex items-center gap-2 hover:text-foreground">
+                  <Mail className="h-4 w-4" /> {SUPPORT_EMAIL}
+                </a>
               </li>
             </ul>
           </div>
