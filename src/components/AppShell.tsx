@@ -12,6 +12,7 @@ import {
   Crown,
   Shield,
   Flame,
+  LifeBuoy,
   LogOut,
   Menu,
   X,
@@ -33,6 +34,7 @@ const nav = [
   { to: "/progress", label: "Progress", icon: Trophy },
   { to: "/friends", label: "Friends", icon: Users },
   { to: "/pricing", label: "Premium", icon: Crown },
+  { to: "/help", label: "Help", icon: LifeBuoy },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
