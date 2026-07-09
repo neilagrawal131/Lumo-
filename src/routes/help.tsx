@@ -1,14 +1,61 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, LifeBuoy, Mail } from "lucide-react";
+import { toast } from "sonner";
+import { ArrowLeft, LifeBuoy, Mail, ArrowRight } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { SUPPORT_EMAIL } from "@/lib/support";
 
 export const Route = createFileRoute("/help")({
   component: HelpPage,
 });
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// "Still need help?" — enter your email, Continue, then jump to your mail app to
+// send us a message. Invalid email shows a red toast from the top.
+function ContactBox() {
+  const [email, setEmail] = useState("");
+
+  function onContinue() {
+    const value = email.trim();
+    if (!EMAIL_RE.test(value)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    const subject = encodeURIComponent("Etude support");
+    const body = encodeURIComponent(`\n\n— Sent from ${value}`);
+    window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
+  }
+
+  return (
+    <div className="rounded-3xl border border-primary/20 bg-primary/5 p-8 text-center">
+      <Mail className="mx-auto h-8 w-8 text-primary" />
+      <h2 className="mt-3 text-xl font-bold">Still need help?</h2>
+      <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+        Enter your email and hit Continue — we'll open your mail app so you can send us a message,
+        and we'll get back to you there.
+      </p>
+      <div className="mx-auto mt-5 flex max-w-sm flex-col gap-2 sm:flex-row">
+        <Input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onContinue();
+          }}
+          placeholder="you@example.com"
+          className="bg-background"
+        />
+        <Button variant="hero" onClick={onContinue}>
+          Continue <ArrowRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function QA({ q, children }: { q: string; children: ReactNode }) {
   return (
@@ -108,18 +155,7 @@ function HelpPage() {
 
         {/* ---------- Contact ---------- */}
         <section className="mt-12">
-          <div className="rounded-3xl border border-primary/20 bg-primary/5 p-8 text-center">
-            <Mail className="mx-auto h-8 w-8 text-primary" />
-            <h2 className="mt-3 text-xl font-bold">Still need help?</h2>
-            <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-              Can't find what you're looking for? Send us an email and we'll get back to you.
-            </p>
-            <Button asChild variant="hero" className="mt-5">
-              <a href={`mailto:${SUPPORT_EMAIL}`}>
-                <Mail className="h-4 w-4" /> Email {SUPPORT_EMAIL}
-              </a>
-            </Button>
-          </div>
+          <ContactBox />
         </section>
       </main>
 
