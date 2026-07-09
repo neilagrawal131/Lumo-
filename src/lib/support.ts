@@ -7,4 +7,4 @@ export const SUPPORT_EMAIL = "etude.support@gmail.com";
 // support inbox via Web3Forms). Get a free key at https://web3forms.com by
 // entering etude.support@gmail.com, then paste it here. This key is safe to be
 // public. While it's blank, the Help page falls back to a Gmail compose button.
-export const CONTACT_FORM_KEY = "";
+export const CONTACT_FORM_KEY = "6f01c630-96d4-49c4-96db-5ec128a3120f";
