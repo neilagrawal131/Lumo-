@@ -1,33 +1,127 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, LifeBuoy, Mail } from "lucide-react";
+import { toast } from "sonner";
+import { ArrowLeft, LifeBuoy, Mail, Send, CheckCircle2, Loader2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
-import { SUPPORT_EMAIL } from "@/lib/support";
+import { Input } from "@/components/ui/input";
+import { SUPPORT_EMAIL, CONTACT_FORM_KEY } from "@/lib/support";
 
 export const Route = createFileRoute("/help")({
   component: HelpPage,
 });
 
-// "Still need help?" — opens a Gmail compose window addressed to support.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// "Still need help?" — a contact form that delivers the message to the support
+// inbox (via Web3Forms). Until a form key is configured, falls back to a Gmail
+// compose button so the page always works.
 function ContactBox() {
-  const gmailCompose =
-    `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(SUPPORT_EMAIL)}` +
-    `&su=${encodeURIComponent("Etude support")}`;
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const hasFormKey = CONTACT_FORM_KEY.trim().length > 0;
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!EMAIL_RE.test(email.trim())) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    if (!message.trim()) {
+      toast.error("Please write a message first.");
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          access_key: CONTACT_FORM_KEY,
+          email: email.trim(),
+          message: message.trim(),
+          subject: "New Etude support message",
+          from_name: "Etude Help Page",
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || "Something went wrong.");
+      setSent(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't send your message. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  if (sent) {
+    return (
+      <div className="rounded-3xl border border-primary/20 bg-primary/5 p-8 text-center">
+        <CheckCircle2 className="mx-auto h-9 w-9 text-primary" />
+        <h2 className="mt-3 text-xl font-bold">Message sent!</h2>
+        <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+          Thanks for reaching out — we'll reply to <span className="font-medium text-foreground">{email.trim()}</span> soon.
+        </p>
+      </div>
+    );
+  }
+
+  // Fallback until the contact-form key is configured.
+  if (!hasFormKey) {
+    const gmailCompose =
+      `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(SUPPORT_EMAIL)}` +
+      `&su=${encodeURIComponent("Etude support")}`;
+    return (
+      <div className="rounded-3xl border border-primary/20 bg-primary/5 p-8 text-center">
+        <Mail className="mx-auto h-8 w-8 text-primary" />
+        <h2 className="mt-3 text-xl font-bold">Still need help?</h2>
+        <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+          Can't find what you're looking for? Email us and we'll get back to you.
+        </p>
+        <Button asChild variant="hero" className="mt-5">
+          <a href={gmailCompose} target="_blank" rel="noopener noreferrer">
+            <Mail className="h-4 w-4" /> Email us
+          </a>
+        </Button>
+      </div>
+    );
+  }
 
   return (
-    <div className="rounded-3xl border border-primary/20 bg-primary/5 p-8 text-center">
-      <Mail className="mx-auto h-8 w-8 text-primary" />
-      <h2 className="mt-3 text-xl font-bold">Still need help?</h2>
-      <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-        Can't find what you're looking for? Email us and we'll get back to you.
-      </p>
-      <Button asChild variant="hero" className="mt-5">
-        <a href={gmailCompose} target="_blank" rel="noopener noreferrer">
-          <Mail className="h-4 w-4" /> Email us
-        </a>
-      </Button>
+    <div className="rounded-3xl border border-primary/20 bg-primary/5 p-8">
+      <div className="text-center">
+        <Mail className="mx-auto h-8 w-8 text-primary" />
+        <h2 className="mt-3 text-xl font-bold">Still need help?</h2>
+        <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+          Send us a message and we'll reply to your email.
+        </p>
+      </div>
+      <form onSubmit={onSubmit} className="mx-auto mt-6 max-w-md space-y-3">
+        <Input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Your email"
+          className="bg-background"
+          required
+        />
+        <textarea
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="How can we help?"
+          rows={4}
+          required
+          className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+        <Button type="submit" variant="hero" className="w-full" disabled={sending}>
+          {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          Send message
+        </Button>
+      </form>
     </div>
   );
 }
