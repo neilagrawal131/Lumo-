@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
+import { OnboardingTour } from "@/components/OnboardingTour";
 import { BADGES, levelProgress, xpIntoLevel, XP_PER_LEVEL } from "@/lib/gamification";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -107,6 +108,7 @@ function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {user && <OnboardingTour userId={user.id} />}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">
